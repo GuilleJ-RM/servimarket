@@ -115,7 +115,7 @@ export default function Dashboard() {
                             <img src={listing.imageUrl} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-xl bg-primary/10 text-primary">
-                              {listing.category.icon}
+                              {listing.category?.icon}
                             </div>
                           )}
                         </div>

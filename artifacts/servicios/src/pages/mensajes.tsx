@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout/layout";
 import { useAuth } from "@/lib/auth";
-import { useGetConversations } from "@workspace/api-client-react";
+import { useGetConversations, getGetConversationsQueryKey } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import { MessageSquare, ShieldCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +13,7 @@ export default function Mensajes() {
   
   const { data: conversations, isLoading } = useGetConversations({
     query: {
+      queryKey: getGetConversationsQueryKey(),
       refetchInterval: 5000
     }
   });

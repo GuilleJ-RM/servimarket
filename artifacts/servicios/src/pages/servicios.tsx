@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGetCategories, useGetListings } from "@workspace/api-client-react";
-import type { GetListingsType } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { GetListingsType } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout/layout";
 import { useAuth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";

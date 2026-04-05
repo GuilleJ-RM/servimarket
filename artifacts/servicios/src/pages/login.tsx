@@ -44,10 +44,10 @@ export default function Login() {
           });
           window.location.href = "/"; // Reload to get auth context to update
         },
-        onError: (error) => {
+        onError: (error: any) => {
           toast({
             title: "Error al iniciar sesión",
-            description: error.error || "Revisa tus credenciales",
+            description: error?.data?.error || "Revisa tus credenciales",
             variant: "destructive",
           });
         },

@@ -84,10 +84,10 @@ export default function Register() {
           });
           window.location.href = "/";
         },
-        onError: (error) => {
+        onError: (error: any) => {
           toast({
             title: "Error al registrarse",
-            description: error.error || "Ha ocurrido un error inesperado",
+            description: error?.data?.error || "Ha ocurrido un error inesperado",
             variant: "destructive",
           });
         },

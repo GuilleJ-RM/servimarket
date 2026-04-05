@@ -30,6 +30,7 @@ export default function Chat() {
 
   const { data: messages, isLoading: loadingMessages } = useGetMessages(conversationId, {
     query: {
+      queryKey: getGetMessagesQueryKey(conversationId),
       enabled: !!conversationId,
       refetchInterval: 2000, // Poll every 2s for real-time feel
     }

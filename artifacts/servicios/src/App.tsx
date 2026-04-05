@@ -16,6 +16,8 @@ import MisPublicaciones from "@/pages/mis-publicaciones";
 import Publicar from "@/pages/publicar";
 import Mensajes from "@/pages/mensajes";
 import Chat from "@/pages/chat";
+import Admin from "@/pages/admin";
+import Pedidos from "@/pages/pedidos";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,8 @@ function Router() {
       <Route path="/publicar" component={Publicar} />
       <Route path="/mensajes" component={Mensajes} />
       <Route path="/mensajes/:id" component={Chat} />
+      <Route path="/pedidos" component={Pedidos} />
+      <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
   );

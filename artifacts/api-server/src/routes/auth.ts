@@ -14,7 +14,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     return;
   }
 
-  const { name, email, password, role, phone } = parsed.data;
+  const { name, email, password, role, phone, locality } = parsed.data;
 
   const existing = await db.select().from(usersTable).where(eq(usersTable.email, email));
   if (existing.length > 0) {
@@ -29,6 +29,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     passwordHash,
     role,
     phone: phone ?? null,
+    locality: locality ?? null,
   }).returning();
 
   req.session = { userId: user.id };
@@ -40,6 +41,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       role: user.role,
       phone: user.phone,
       avatarUrl: user.avatarUrl,
+      locality: user.locality,
       createdAt: user.createdAt.toISOString(),
     },
   });
@@ -75,6 +77,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       role: user.role,
       phone: user.phone,
       avatarUrl: user.avatarUrl,
+      locality: user.locality,
       createdAt: user.createdAt.toISOString(),
     },
   });
@@ -105,6 +108,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
     role: user.role,
     phone: user.phone,
     avatarUrl: user.avatarUrl,
+    locality: user.locality,
     createdAt: user.createdAt.toISOString(),
   });
 });

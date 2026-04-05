@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Category } from "./category";
+import type { ListingWithProviderPricingType } from "./listingWithProviderPricingType";
+import type { ListingWithProviderSizesItem } from "./listingWithProviderSizesItem";
+import type { ListingWithProviderStatus } from "./listingWithProviderStatus";
 import type { ListingWithProviderType } from "./listingWithProviderType";
 import type { User } from "./user";
 
@@ -19,10 +22,22 @@ export interface ListingWithProvider {
   price: number;
   /** @nullable */
   imageUrl?: string | null;
+  images?: string[];
   /** @nullable */
   whatsapp?: string | null;
   paymentMethods: string[];
   isActive: boolean;
+  /** @nullable */
+  quantity?: number | null;
+  status: ListingWithProviderStatus;
+  pricingType: ListingWithProviderPricingType;
+  /** @nullable */
+  weightKg?: number | null;
+  /** @nullable */
+  sizes?: ListingWithProviderSizesItem[] | null;
+  /** @nullable */
+  variantLabel?: string | null;
+  requiresSchedule: boolean;
   createdAt: string;
   provider: User;
   category: Category;

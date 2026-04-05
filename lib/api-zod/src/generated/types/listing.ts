@@ -5,6 +5,9 @@
  * Marketplace de Servicios API
  * OpenAPI spec version: 0.1.0
  */
+import type { ListingPricingType } from "./listingPricingType";
+import type { ListingSizesItem } from "./listingSizesItem";
+import type { ListingStatus } from "./listingStatus";
 import type { ListingType } from "./listingType";
 
 export interface Listing {
@@ -17,9 +20,21 @@ export interface Listing {
   price: number;
   /** @nullable */
   imageUrl?: string | null;
+  images?: string[];
   /** @nullable */
   whatsapp?: string | null;
   paymentMethods: string[];
   isActive: boolean;
+  /** @nullable */
+  quantity?: number | null;
+  status: ListingStatus;
+  pricingType: ListingPricingType;
+  /** @nullable */
+  weightKg?: number | null;
+  /** @nullable */
+  sizes?: ListingSizesItem[] | null;
+  /** @nullable */
+  variantLabel?: string | null;
+  requiresSchedule: boolean;
   createdAt: string;
 }

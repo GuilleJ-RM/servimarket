@@ -9,6 +9,7 @@ router.get("/categories", async (_req, res): Promise<void> => {
     id: c.id,
     name: c.name,
     icon: c.icon,
+    type: c.type,
     description: c.description,
   })));
 });

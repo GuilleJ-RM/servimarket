@@ -5,11 +5,14 @@
  * Marketplace de Servicios API
  * OpenAPI spec version: 0.1.0
  */
+import type { CategoryType } from "./categoryType";
 
 export interface Category {
   id: number;
   name: string;
-  icon: string;
+  /** @nullable */
+  icon?: string | null;
+  type: CategoryType;
   /** @nullable */
   description?: string | null;
 }

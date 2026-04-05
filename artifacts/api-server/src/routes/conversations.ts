@@ -134,11 +134,20 @@ router.post("/conversations", async (req, res): Promise<void> => {
     return;
   }
 
-  const { providerId, listingId } = parsed.data;
+  const { providerId: targetUserId, listingId } = parsed.data;
 
-  // Check if conversation already exists
-  const conditions = [eq(conversationsTable.clientId, userId), eq(conversationsTable.providerId, providerId)];
-  const existing = await db.select().from(conversationsTable).where(and(...conditions));
+  if (targetUserId === userId) {
+    res.status(400).json({ error: "No puedes iniciar una conversación contigo mismo" });
+    return;
+  }
+
+  // Check if conversation already exists in either direction
+  const existing = await db.select().from(conversationsTable).where(
+    or(
+      and(eq(conversationsTable.clientId, userId), eq(conversationsTable.providerId, targetUserId)),
+      and(eq(conversationsTable.clientId, targetUserId), eq(conversationsTable.providerId, userId))
+    )
+  );
 
   if (existing.length > 0) {
     const conv = existing[0];
@@ -152,9 +161,25 @@ router.post("/conversations", async (req, res): Promise<void> => {
     return;
   }
 
+  // Determine proper roles based on user types
+  const [targetUser] = await db.select().from(usersTable).where(eq(usersTable.id, targetUserId));
+  if (!targetUser) {
+    res.status(404).json({ error: "Usuario no encontrado" });
+    return;
+  }
+
+  let actualClientId = userId;
+  let actualProviderId = targetUserId;
+
+  // If target is not a provider, current user acts as the provider side
+  if (targetUser.role !== "provider") {
+    actualClientId = targetUserId;
+    actualProviderId = userId;
+  }
+
   const [conv] = await db.insert(conversationsTable).values({
-    clientId: userId,
-    providerId,
+    clientId: actualClientId,
+    providerId: actualProviderId,
     listingId: listingId ?? null,
   }).returning();
 
@@ -182,7 +207,10 @@ router.get("/conversations/:id/messages", async (req, res): Promise<void> => {
   }
 
   const [conv] = await db.select().from(conversationsTable).where(eq(conversationsTable.id, id));
-  if (!conv || (conv.clientId !== userId && conv.providerId !== userId)) {
+  const [currentUser] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  const isParticipant = conv && (conv.clientId === userId || conv.providerId === userId);
+  const isAdminUser = currentUser?.role === "admin";
+  if (!conv || (!isParticipant && !isAdminUser)) {
     res.status(403).json({ error: "Sin acceso" });
     return;
   }
@@ -193,11 +221,13 @@ router.get("/conversations/:id/messages", async (req, res): Promise<void> => {
     .where(eq(messagesTable.conversationId, id))
     .orderBy(messagesTable.createdAt);
 
-  // Mark messages as read
-  await db
-    .update(messagesTable)
-    .set({ isRead: true })
-    .where(and(eq(messagesTable.conversationId, id), eq(messagesTable.isRead, false)));
+  // Mark messages as read (only for participants)
+  if (isParticipant) {
+    await db
+      .update(messagesTable)
+      .set({ isRead: true })
+      .where(and(eq(messagesTable.conversationId, id), eq(messagesTable.isRead, false)));
+  }
 
   const senderIds = [...new Set(messages.map(m => m.senderId))];
   let senderMap: Record<number, typeof usersTable.$inferSelect> = {};
@@ -232,7 +262,10 @@ router.post("/conversations/:id/messages", async (req, res): Promise<void> => {
   }
 
   const [conv] = await db.select().from(conversationsTable).where(eq(conversationsTable.id, id));
-  if (!conv || (conv.clientId !== userId && conv.providerId !== userId)) {
+  const [msgCurrentUser] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  const isMsgParticipant = conv && (conv.clientId === userId || conv.providerId === userId);
+  const isMsgAdmin = msgCurrentUser?.role === "admin";
+  if (!conv || (!isMsgParticipant && !isMsgAdmin)) {
     res.status(403).json({ error: "Sin acceso" });
     return;
   }

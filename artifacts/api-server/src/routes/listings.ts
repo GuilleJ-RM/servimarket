@@ -22,9 +22,17 @@ function formatListing(l: typeof listingsTable.$inferSelect, provider: typeof us
     type: l.type,
     price: l.price,
     imageUrl: l.imageUrl,
+    images: l.images ?? [],
     whatsapp: l.whatsapp,
     paymentMethods: l.paymentMethods,
     isActive: l.isActive,
+    quantity: l.quantity,
+    status: l.status,
+    pricingType: l.pricingType,
+    weightKg: l.weightKg,
+    sizes: l.sizes,
+    variantLabel: l.variantLabel,
+    requiresSchedule: l.requiresSchedule,
     createdAt: l.createdAt.toISOString(),
     provider: {
       id: provider.id,
@@ -33,12 +41,14 @@ function formatListing(l: typeof listingsTable.$inferSelect, provider: typeof us
       role: provider.role,
       phone: provider.phone,
       avatarUrl: provider.avatarUrl,
+      locality: provider.locality,
       createdAt: provider.createdAt.toISOString(),
     },
     category: {
       id: category.id,
       name: category.name,
       icon: category.icon,
+      type: category.type,
       description: category.description,
     },
   };
@@ -52,20 +62,42 @@ router.get("/listings/my", async (req, res): Promise<void> => {
   }
 
   const listings = await db.select().from(listingsTable).where(eq(listingsTable.providerId, userId)).orderBy(listingsTable.createdAt);
-  res.json(listings.map(l => ({
-    id: l.id,
-    providerId: l.providerId,
-    categoryId: l.categoryId,
-    title: l.title,
-    description: l.description,
-    type: l.type,
-    price: l.price,
-    imageUrl: l.imageUrl,
-    whatsapp: l.whatsapp,
-    paymentMethods: l.paymentMethods,
-    isActive: l.isActive,
-    createdAt: l.createdAt.toISOString(),
-  })));
+
+  if (listings.length === 0) {
+    res.json([]);
+    return;
+  }
+
+  const categoryIds = [...new Set(listings.map(l => l.categoryId))];
+  const cats = await db.select().from(categoriesTable).where(inArray(categoriesTable.id, categoryIds));
+  const catMap = Object.fromEntries(cats.map(c => [c.id, c]));
+
+  res.json(listings.map(l => {
+    const cat = catMap[l.categoryId];
+    return {
+      id: l.id,
+      providerId: l.providerId,
+      categoryId: l.categoryId,
+      title: l.title,
+      description: l.description,
+      type: l.type,
+      price: l.price,
+      imageUrl: l.imageUrl,
+      images: l.images ?? [],
+      whatsapp: l.whatsapp,
+      paymentMethods: l.paymentMethods,
+      isActive: l.isActive,
+      quantity: l.quantity,
+      status: l.status,
+      pricingType: l.pricingType,
+      weightKg: l.weightKg,
+      sizes: l.sizes,
+      variantLabel: l.variantLabel,
+      requiresSchedule: l.requiresSchedule,
+      createdAt: l.createdAt.toISOString(),
+      category: cat ? { id: cat.id, name: cat.name, icon: cat.icon, type: cat.type, description: cat.description } : null,
+    };
+  }));
 });
 
 router.get("/listings/featured", async (_req, res): Promise<void> => {
@@ -86,7 +118,7 @@ router.get("/listings/featured", async (_req, res): Promise<void> => {
     const providerMap = Object.fromEntries(providers.map(p => [p.id, p]));
 
     result.push({
-      category: { id: category.id, name: category.name, icon: category.icon, description: category.description },
+      category: { id: category.id, name: category.name, icon: category.icon, type: category.type, description: category.description },
       listings: listings.map(l => formatListing(l, providerMap[l.providerId], category)),
     });
   }
@@ -99,7 +131,7 @@ router.get("/listings", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { categoryId, type, search } = parsed.data;
+  const { categoryId, type, search, locality } = parsed.data;
 
   const conditions = [eq(listingsTable.isActive, true)];
   if (categoryId) conditions.push(eq(listingsTable.categoryId, categoryId));
@@ -128,7 +160,13 @@ router.get("/listings", async (req, res): Promise<void> => {
   const providerMap = Object.fromEntries(providers.map(p => [p.id, p]));
   const catMap = Object.fromEntries(cats.map(c => [c.id, c]));
 
-  res.json(rows.map(l => formatListing(l, providerMap[l.providerId], catMap[l.categoryId])));
+  let results = rows.map(l => formatListing(l, providerMap[l.providerId], catMap[l.categoryId]));
+
+  if (locality) {
+    results = results.filter(l => l.provider.locality === locality);
+  }
+
+  res.json(results);
 });
 
 router.post("/listings", async (req, res): Promise<void> => {
@@ -158,8 +196,15 @@ router.post("/listings", async (req, res): Promise<void> => {
     type: parsed.data.type,
     price: parsed.data.price,
     imageUrl: parsed.data.imageUrl ?? null,
+    images: parsed.data.images ?? [],
     whatsapp: parsed.data.whatsapp ?? null,
     paymentMethods: parsed.data.paymentMethods,
+    quantity: parsed.data.quantity ?? null,
+    pricingType: parsed.data.pricingType ?? "unit",
+    weightKg: parsed.data.weightKg ?? null,
+    sizes: parsed.data.sizes ?? null,
+    variantLabel: parsed.data.variantLabel ?? null,
+    requiresSchedule: parsed.data.requiresSchedule ?? false,
   }).returning();
 
   res.status(201).json({
@@ -171,9 +216,17 @@ router.post("/listings", async (req, res): Promise<void> => {
     type: listing.type,
     price: listing.price,
     imageUrl: listing.imageUrl,
+    images: listing.images ?? [],
     whatsapp: listing.whatsapp,
     paymentMethods: listing.paymentMethods,
     isActive: listing.isActive,
+    quantity: listing.quantity,
+    status: listing.status,
+    pricingType: listing.pricingType,
+    weightKg: listing.weightKg,
+    sizes: listing.sizes,
+    variantLabel: listing.variantLabel,
+    requiresSchedule: listing.requiresSchedule,
     createdAt: listing.createdAt.toISOString(),
   });
 });
@@ -235,9 +288,17 @@ router.patch("/listings/:id", async (req, res): Promise<void> => {
   if (parsed.data.type != null) updateData.type = parsed.data.type;
   if (parsed.data.price != null) updateData.price = parsed.data.price;
   if (parsed.data.imageUrl !== undefined) updateData.imageUrl = parsed.data.imageUrl;
+  if (parsed.data.images !== undefined) updateData.images = parsed.data.images;
   if (parsed.data.whatsapp !== undefined) updateData.whatsapp = parsed.data.whatsapp;
   if (parsed.data.paymentMethods != null) updateData.paymentMethods = parsed.data.paymentMethods;
   if (parsed.data.isActive != null) updateData.isActive = parsed.data.isActive;
+  if (parsed.data.quantity !== undefined) updateData.quantity = parsed.data.quantity;
+  if (parsed.data.status != null) updateData.status = parsed.data.status;
+  if (parsed.data.pricingType != null) updateData.pricingType = parsed.data.pricingType;
+  if (parsed.data.weightKg !== undefined) updateData.weightKg = parsed.data.weightKg;
+  if (parsed.data.sizes !== undefined) updateData.sizes = parsed.data.sizes;
+  if (parsed.data.variantLabel !== undefined) updateData.variantLabel = parsed.data.variantLabel;
+  if (parsed.data.requiresSchedule !== undefined && parsed.data.requiresSchedule !== null) updateData.requiresSchedule = parsed.data.requiresSchedule;
 
   const [listing] = await db.update(listingsTable).set(updateData).where(eq(listingsTable.id, id)).returning();
 
@@ -250,9 +311,17 @@ router.patch("/listings/:id", async (req, res): Promise<void> => {
     type: listing.type,
     price: listing.price,
     imageUrl: listing.imageUrl,
+    images: listing.images ?? [],
     whatsapp: listing.whatsapp,
     paymentMethods: listing.paymentMethods,
     isActive: listing.isActive,
+    quantity: listing.quantity,
+    status: listing.status,
+    pricingType: listing.pricingType,
+    weightKg: listing.weightKg,
+    sizes: listing.sizes,
+    variantLabel: listing.variantLabel,
+    requiresSchedule: listing.requiresSchedule,
     createdAt: listing.createdAt.toISOString(),
   });
 });

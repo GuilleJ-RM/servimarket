@@ -5,6 +5,9 @@
  * Marketplace de Servicios API
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateListingBodyPricingType } from "./updateListingBodyPricingType";
+import type { UpdateListingBodySizesItem } from "./updateListingBodySizesItem";
+import type { UpdateListingBodyStatus } from "./updateListingBodyStatus";
 import type { UpdateListingBodyType } from "./updateListingBodyType";
 
 export interface UpdateListingBody {
@@ -21,9 +24,25 @@ export interface UpdateListingBody {
   /** @nullable */
   imageUrl?: string | null;
   /** @nullable */
+  images?: string[] | null;
+  /** @nullable */
   whatsapp?: string | null;
   /** @nullable */
   paymentMethods?: string[] | null;
   /** @nullable */
   isActive?: boolean | null;
+  /** @nullable */
+  quantity?: number | null;
+  /** @nullable */
+  status?: UpdateListingBodyStatus;
+  /** @nullable */
+  pricingType?: UpdateListingBodyPricingType;
+  /** @nullable */
+  weightKg?: number | null;
+  /** @nullable */
+  sizes?: UpdateListingBodySizesItem[] | null;
+  /** @nullable */
+  variantLabel?: string | null;
+  /** @nullable */
+  requiresSchedule?: boolean | null;
 }

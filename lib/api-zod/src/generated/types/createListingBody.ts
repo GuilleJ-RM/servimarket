@@ -5,6 +5,8 @@
  * Marketplace de Servicios API
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateListingBodyPricingType } from "./createListingBodyPricingType";
+import type { CreateListingBodySizesItem } from "./createListingBodySizesItem";
 import type { CreateListingBodyType } from "./createListingBodyType";
 
 export interface CreateListingBody {
@@ -15,7 +17,19 @@ export interface CreateListingBody {
   price: number;
   /** @nullable */
   imageUrl?: string | null;
+  images?: string[];
   /** @nullable */
   whatsapp?: string | null;
   paymentMethods: string[];
+  /** @nullable */
+  quantity?: number | null;
+  pricingType?: CreateListingBodyPricingType;
+  /** @nullable */
+  weightKg?: number | null;
+  /** @nullable */
+  sizes?: CreateListingBodySizesItem[] | null;
+  /** @nullable */
+  variantLabel?: string | null;
+  /** @nullable */
+  requiresSchedule?: boolean | null;
 }

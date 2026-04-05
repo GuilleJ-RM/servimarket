@@ -20,4 +20,8 @@ export type GetListingsParams = {
    * @nullable
    */
   search?: string | null;
+  /**
+   * @nullable
+   */
+  locality?: string | null;
 };

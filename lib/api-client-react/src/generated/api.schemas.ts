@@ -23,6 +23,7 @@ export type RegisterBodyRole =
 export const RegisterBodyRole = {
   provider: "provider",
   client: "client",
+  admin: "admin",
 } as const;
 
 export interface RegisterBody {
@@ -32,6 +33,8 @@ export interface RegisterBody {
   role: RegisterBodyRole;
   /** @nullable */
   phone?: string | null;
+  /** @nullable */
+  locality?: string | null;
 }
 
 export interface LoginBody {
@@ -44,6 +47,7 @@ export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 export const UserRole = {
   provider: "provider",
   client: "client",
+  admin: "admin",
 } as const;
 
 export interface User {
@@ -55,6 +59,8 @@ export interface User {
   phone?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  locality?: string | null;
   createdAt: string;
 }
 
@@ -62,10 +68,19 @@ export interface AuthResponse {
   user: User;
 }
 
+export type CategoryType = (typeof CategoryType)[keyof typeof CategoryType];
+
+export const CategoryType = {
+  service: "service",
+  product: "product",
+} as const;
+
 export interface Category {
   id: number;
   name: string;
-  icon: string;
+  /** @nullable */
+  icon?: string | null;
+  type: CategoryType;
   /** @nullable */
   description?: string | null;
 }
@@ -77,6 +92,29 @@ export const ListingType = {
   product: "product",
 } as const;
 
+export type ListingStatus = (typeof ListingStatus)[keyof typeof ListingStatus];
+
+export const ListingStatus = {
+  active: "active",
+  sold: "sold",
+  paused: "paused",
+} as const;
+
+export type ListingPricingType =
+  (typeof ListingPricingType)[keyof typeof ListingPricingType];
+
+export const ListingPricingType = {
+  unit: "unit",
+  per_kilo: "per_kilo",
+} as const;
+
+export type ListingSizesItem = {
+  name: string;
+  price: number;
+  /** @nullable */
+  stock?: number | null;
+};
+
 export interface Listing {
   id: number;
   providerId: number;
@@ -87,12 +125,28 @@ export interface Listing {
   price: number;
   /** @nullable */
   imageUrl?: string | null;
+  images?: string[];
   /** @nullable */
   whatsapp?: string | null;
   paymentMethods: string[];
   isActive: boolean;
+  /** @nullable */
+  quantity?: number | null;
+  status: ListingStatus;
+  pricingType: ListingPricingType;
+  /** @nullable */
+  weightKg?: number | null;
+  /** @nullable */
+  sizes?: ListingSizesItem[] | null;
+  /** @nullable */
+  variantLabel?: string | null;
+  requiresSchedule: boolean;
   createdAt: string;
 }
+
+export type MyListing = Listing & {
+  category?: Category;
+};
 
 export type ListingWithProviderType =
   (typeof ListingWithProviderType)[keyof typeof ListingWithProviderType];
@@ -101,6 +155,30 @@ export const ListingWithProviderType = {
   service: "service",
   product: "product",
 } as const;
+
+export type ListingWithProviderStatus =
+  (typeof ListingWithProviderStatus)[keyof typeof ListingWithProviderStatus];
+
+export const ListingWithProviderStatus = {
+  active: "active",
+  sold: "sold",
+  paused: "paused",
+} as const;
+
+export type ListingWithProviderPricingType =
+  (typeof ListingWithProviderPricingType)[keyof typeof ListingWithProviderPricingType];
+
+export const ListingWithProviderPricingType = {
+  unit: "unit",
+  per_kilo: "per_kilo",
+} as const;
+
+export type ListingWithProviderSizesItem = {
+  name: string;
+  price: number;
+  /** @nullable */
+  stock?: number | null;
+};
 
 export interface ListingWithProvider {
   id: number;
@@ -112,10 +190,22 @@ export interface ListingWithProvider {
   price: number;
   /** @nullable */
   imageUrl?: string | null;
+  images?: string[];
   /** @nullable */
   whatsapp?: string | null;
   paymentMethods: string[];
   isActive: boolean;
+  /** @nullable */
+  quantity?: number | null;
+  status: ListingWithProviderStatus;
+  pricingType: ListingWithProviderPricingType;
+  /** @nullable */
+  weightKg?: number | null;
+  /** @nullable */
+  sizes?: ListingWithProviderSizesItem[] | null;
+  /** @nullable */
+  variantLabel?: string | null;
+  requiresSchedule: boolean;
   createdAt: string;
   provider: User;
   category: Category;
@@ -129,6 +219,21 @@ export const CreateListingBodyType = {
   product: "product",
 } as const;
 
+export type CreateListingBodyPricingType =
+  (typeof CreateListingBodyPricingType)[keyof typeof CreateListingBodyPricingType];
+
+export const CreateListingBodyPricingType = {
+  unit: "unit",
+  per_kilo: "per_kilo",
+} as const;
+
+export type CreateListingBodySizesItem = {
+  name: string;
+  price: number;
+  /** @nullable */
+  stock?: number | null;
+};
+
 export interface CreateListingBody {
   categoryId: number;
   title: string;
@@ -137,9 +242,21 @@ export interface CreateListingBody {
   price: number;
   /** @nullable */
   imageUrl?: string | null;
+  images?: string[];
   /** @nullable */
   whatsapp?: string | null;
   paymentMethods: string[];
+  /** @nullable */
+  quantity?: number | null;
+  pricingType?: CreateListingBodyPricingType;
+  /** @nullable */
+  weightKg?: number | null;
+  /** @nullable */
+  sizes?: CreateListingBodySizesItem[] | null;
+  /** @nullable */
+  variantLabel?: string | null;
+  /** @nullable */
+  requiresSchedule?: boolean | null;
 }
 
 /**
@@ -153,6 +270,38 @@ export const UpdateListingBodyType = {
   service: "service",
   product: "product",
 } as const;
+
+/**
+ * @nullable
+ */
+export type UpdateListingBodyStatus =
+  | (typeof UpdateListingBodyStatus)[keyof typeof UpdateListingBodyStatus]
+  | null;
+
+export const UpdateListingBodyStatus = {
+  active: "active",
+  sold: "sold",
+  paused: "paused",
+} as const;
+
+/**
+ * @nullable
+ */
+export type UpdateListingBodyPricingType =
+  | (typeof UpdateListingBodyPricingType)[keyof typeof UpdateListingBodyPricingType]
+  | null;
+
+export const UpdateListingBodyPricingType = {
+  unit: "unit",
+  per_kilo: "per_kilo",
+} as const;
+
+export type UpdateListingBodySizesItem = {
+  name: string;
+  price: number;
+  /** @nullable */
+  stock?: number | null;
+};
 
 export interface UpdateListingBody {
   /** @nullable */
@@ -168,11 +317,27 @@ export interface UpdateListingBody {
   /** @nullable */
   imageUrl?: string | null;
   /** @nullable */
+  images?: string[] | null;
+  /** @nullable */
   whatsapp?: string | null;
   /** @nullable */
   paymentMethods?: string[] | null;
   /** @nullable */
   isActive?: boolean | null;
+  /** @nullable */
+  quantity?: number | null;
+  /** @nullable */
+  status?: UpdateListingBodyStatus;
+  /** @nullable */
+  pricingType?: UpdateListingBodyPricingType;
+  /** @nullable */
+  weightKg?: number | null;
+  /** @nullable */
+  sizes?: UpdateListingBodySizesItem[] | null;
+  /** @nullable */
+  variantLabel?: string | null;
+  /** @nullable */
+  requiresSchedule?: boolean | null;
 }
 
 export interface CategoryWithListings {
@@ -232,6 +397,203 @@ export interface UploadImageResponse {
   url: string;
 }
 
+export interface AdminStats {
+  totalUsers: number;
+  totalProviders: number;
+  totalClients: number;
+  totalListings: number;
+  activeListings: number;
+  totalConversations: number;
+  totalMessages: number;
+}
+
+/**
+ * @nullable
+ */
+export type AdminUpdateUserBodyRole =
+  | (typeof AdminUpdateUserBodyRole)[keyof typeof AdminUpdateUserBodyRole]
+  | null;
+
+export const AdminUpdateUserBodyRole = {
+  provider: "provider",
+  client: "client",
+  admin: "admin",
+} as const;
+
+export interface AdminUpdateUserBody {
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  password?: string | null;
+  /** @nullable */
+  role?: AdminUpdateUserBodyRole;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  locality?: string | null;
+}
+
+export type CreateCategoryBodyType =
+  (typeof CreateCategoryBodyType)[keyof typeof CreateCategoryBodyType];
+
+export const CreateCategoryBodyType = {
+  service: "service",
+  product: "product",
+} as const;
+
+export interface CreateCategoryBody {
+  name: string;
+  /** @nullable */
+  icon?: string | null;
+  type: CreateCategoryBodyType;
+  /** @nullable */
+  description?: string | null;
+}
+
+/**
+ * @nullable
+ */
+export type UpdateCategoryBodyType =
+  | (typeof UpdateCategoryBodyType)[keyof typeof UpdateCategoryBodyType]
+  | null;
+
+export const UpdateCategoryBodyType = {
+  service: "service",
+  product: "product",
+} as const;
+
+export interface UpdateCategoryBody {
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  icon?: string | null;
+  /** @nullable */
+  type?: UpdateCategoryBodyType;
+  /** @nullable */
+  description?: string | null;
+}
+
+export type BookingStatus = (typeof BookingStatus)[keyof typeof BookingStatus];
+
+export const BookingStatus = {
+  pending: "pending",
+  confirmed: "confirmed",
+  in_progress: "in_progress",
+  completed: "completed",
+  delivered: "delivered",
+  cancelled: "cancelled",
+} as const;
+
+export interface Booking {
+  id: number;
+  listingId: number;
+  clientId: number;
+  providerId: number;
+  status: BookingStatus;
+  /** @nullable */
+  scheduledDate?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  quantity: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type BookingWithDetailsStatus =
+  (typeof BookingWithDetailsStatus)[keyof typeof BookingWithDetailsStatus];
+
+export const BookingWithDetailsStatus = {
+  pending: "pending",
+  confirmed: "confirmed",
+  in_progress: "in_progress",
+  completed: "completed",
+  delivered: "delivered",
+  cancelled: "cancelled",
+} as const;
+
+export interface BookingWithDetails {
+  id: number;
+  listingId: number;
+  clientId: number;
+  providerId: number;
+  status: BookingWithDetailsStatus;
+  /** @nullable */
+  scheduledDate?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  quantity: number;
+  createdAt: string;
+  updatedAt: string;
+  listing: Listing;
+  client: User;
+  provider: User;
+}
+
+export interface CreateBookingBody {
+  listingId: number;
+  /** @nullable */
+  scheduledDate?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  quantity?: number;
+}
+
+export type UpdateBookingStatusBodyStatus =
+  (typeof UpdateBookingStatusBodyStatus)[keyof typeof UpdateBookingStatusBodyStatus];
+
+export const UpdateBookingStatusBodyStatus = {
+  confirmed: "confirmed",
+  in_progress: "in_progress",
+  completed: "completed",
+  delivered: "delivered",
+  cancelled: "cancelled",
+} as const;
+
+export interface UpdateBookingStatusBody {
+  status: UpdateBookingStatusBodyStatus;
+}
+
+export interface UpdateBookingBody {
+  /** @nullable */
+  scheduledDate?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface Review {
+  id: number;
+  bookingId: number;
+  listingId: number;
+  reviewerId: number;
+  providerId: number;
+  rating: number;
+  /** @nullable */
+  comment?: string | null;
+  createdAt: string;
+}
+
+export interface ReviewWithUser {
+  id: number;
+  bookingId: number;
+  listingId: number;
+  reviewerId: number;
+  providerId: number;
+  rating: number;
+  /** @nullable */
+  comment?: string | null;
+  createdAt: string;
+  reviewer: User;
+}
+
+export interface CreateReviewBody {
+  bookingId: number;
+  rating: number;
+  /** @nullable */
+  comment?: string | null;
+}
+
 export type GetListingsParams = {
   /**
    * @nullable
@@ -245,6 +607,10 @@ export type GetListingsParams = {
    * @nullable
    */
   search?: string | null;
+  /**
+   * @nullable
+   */
+  locality?: string | null;
 };
 
 export type GetListingsType =

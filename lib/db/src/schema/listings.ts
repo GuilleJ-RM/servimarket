@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, boolean, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, boolean, real, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -13,9 +13,17 @@ export const listingsTable = pgTable("listings", {
   type: text("type").notNull().default("service"),
   price: real("price").notNull(),
   imageUrl: text("image_url"),
+  images: text("images").array().default([]), // Multiple images
   whatsapp: text("whatsapp"),
   paymentMethods: text("payment_methods").array().notNull().default([]),
   isActive: boolean("is_active").notNull().default(true),
+  quantity: integer("quantity"), // For products: stock count (null = unlimited/service)
+  status: text("status").notNull().default("active"), // active | sold | paused
+  pricingType: text("pricing_type").notNull().default("unit"), // unit | per_kilo (legacy)
+  weightKg: real("weight_kg"), // Available kg (legacy)
+  sizes: jsonb("sizes"), // [{name: string, price: number, stock?: number}] variants
+  variantLabel: text("variant_label"), // Label for variants: Talle, Tiempo, Superficie, Peso, etc.
+  requiresSchedule: boolean("requires_schedule").notNull().default(false), // Provider decides if clients must pick date/time
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

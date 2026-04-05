@@ -14,4 +14,6 @@ export interface RegisterBody {
   role: RegisterBodyRole;
   /** @nullable */
   phone?: string | null;
+  /** @nullable */
+  locality?: string | null;
 }

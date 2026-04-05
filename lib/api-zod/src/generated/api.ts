@@ -21,8 +21,9 @@ export const RegisterBody = zod.object({
   name: zod.string(),
   email: zod.string(),
   password: zod.string(),
-  role: zod.enum(["provider", "client"]),
+  role: zod.enum(["provider", "client", "admin"]),
   phone: zod.string().nullish(),
+  locality: zod.string().nullish(),
 });
 
 /**
@@ -38,9 +39,10 @@ export const LoginResponse = zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client"]),
+    role: zod.enum(["provider", "client", "admin"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
+    locality: zod.string().nullish(),
     createdAt: zod.string(),
   }),
 });
@@ -59,9 +61,10 @@ export const GetMeResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["provider", "client"]),
+  role: zod.enum(["provider", "client", "admin"]),
   phone: zod.string().nullish(),
   avatarUrl: zod.string().nullish(),
+  locality: zod.string().nullish(),
   createdAt: zod.string(),
 });
 
@@ -71,7 +74,8 @@ export const GetMeResponse = zod.object({
 export const GetCategoriesResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
-  icon: zod.string(),
+  icon: zod.string().nullish(),
+  type: zod.enum(["service", "product"]),
   description: zod.string().nullish(),
 });
 export const GetCategoriesResponse = zod.array(GetCategoriesResponseItem);
@@ -85,6 +89,7 @@ export const GetListingsQueryParams = zod.object({
     .union([zod.literal("service"), zod.literal("product"), zod.literal(null)])
     .nullish(),
   search: zod.coerce.string().nullish(),
+  locality: zod.coerce.string().nullish(),
 });
 
 export const GetListingsResponseItem = zod.object({
@@ -96,23 +101,41 @@ export const GetListingsResponseItem = zod.object({
   type: zod.enum(["service", "product"]),
   price: zod.number(),
   imageUrl: zod.string().nullish(),
+  images: zod.array(zod.string()).optional(),
   whatsapp: zod.string().nullish(),
   paymentMethods: zod.array(zod.string()),
   isActive: zod.boolean(),
+  quantity: zod.number().nullish(),
+  status: zod.enum(["active", "sold", "paused"]),
+  pricingType: zod.enum(["unit", "per_kilo"]),
+  weightKg: zod.number().nullish(),
+  sizes: zod
+    .array(
+      zod.object({
+        name: zod.string(),
+        price: zod.number(),
+        stock: zod.number().nullish(),
+      }),
+    )
+    .nullish(),
+  variantLabel: zod.string().nullish(),
+  requiresSchedule: zod.boolean(),
   createdAt: zod.string(),
   provider: zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client"]),
+    role: zod.enum(["provider", "client", "admin"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
+    locality: zod.string().nullish(),
     createdAt: zod.string(),
   }),
   category: zod.object({
     id: zod.number(),
     name: zod.string(),
-    icon: zod.string(),
+    icon: zod.string().nullish(),
+    type: zod.enum(["service", "product"]),
     description: zod.string().nullish(),
   }),
 });
@@ -128,8 +151,23 @@ export const CreateListingBody = zod.object({
   type: zod.enum(["service", "product"]),
   price: zod.number(),
   imageUrl: zod.string().nullish(),
+  images: zod.array(zod.string()).optional(),
   whatsapp: zod.string().nullish(),
   paymentMethods: zod.array(zod.string()),
+  quantity: zod.number().nullish(),
+  pricingType: zod.enum(["unit", "per_kilo"]).optional(),
+  weightKg: zod.number().nullish(),
+  sizes: zod
+    .array(
+      zod.object({
+        name: zod.string(),
+        price: zod.number(),
+        stock: zod.number().nullish(),
+      }),
+    )
+    .nullish(),
+  variantLabel: zod.string().nullish(),
+  requiresSchedule: zod.boolean().nullish(),
 });
 
 /**
@@ -148,23 +186,41 @@ export const GetListingResponse = zod.object({
   type: zod.enum(["service", "product"]),
   price: zod.number(),
   imageUrl: zod.string().nullish(),
+  images: zod.array(zod.string()).optional(),
   whatsapp: zod.string().nullish(),
   paymentMethods: zod.array(zod.string()),
   isActive: zod.boolean(),
+  quantity: zod.number().nullish(),
+  status: zod.enum(["active", "sold", "paused"]),
+  pricingType: zod.enum(["unit", "per_kilo"]),
+  weightKg: zod.number().nullish(),
+  sizes: zod
+    .array(
+      zod.object({
+        name: zod.string(),
+        price: zod.number(),
+        stock: zod.number().nullish(),
+      }),
+    )
+    .nullish(),
+  variantLabel: zod.string().nullish(),
+  requiresSchedule: zod.boolean(),
   createdAt: zod.string(),
   provider: zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client"]),
+    role: zod.enum(["provider", "client", "admin"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
+    locality: zod.string().nullish(),
     createdAt: zod.string(),
   }),
   category: zod.object({
     id: zod.number(),
     name: zod.string(),
-    icon: zod.string(),
+    icon: zod.string().nullish(),
+    type: zod.enum(["service", "product"]),
     description: zod.string().nullish(),
   }),
 });
@@ -185,9 +241,34 @@ export const UpdateListingBody = zod.object({
     .nullish(),
   price: zod.number().nullish(),
   imageUrl: zod.string().nullish(),
+  images: zod.array(zod.string()).nullish(),
   whatsapp: zod.string().nullish(),
   paymentMethods: zod.array(zod.string()).nullish(),
   isActive: zod.boolean().nullish(),
+  quantity: zod.number().nullish(),
+  status: zod
+    .union([
+      zod.literal("active"),
+      zod.literal("sold"),
+      zod.literal("paused"),
+      zod.literal(null),
+    ])
+    .nullish(),
+  pricingType: zod
+    .union([zod.literal("unit"), zod.literal("per_kilo"), zod.literal(null)])
+    .nullish(),
+  weightKg: zod.number().nullish(),
+  sizes: zod
+    .array(
+      zod.object({
+        name: zod.string(),
+        price: zod.number(),
+        stock: zod.number().nullish(),
+      }),
+    )
+    .nullish(),
+  variantLabel: zod.string().nullish(),
+  requiresSchedule: zod.boolean().nullish(),
 });
 
 export const UpdateListingResponse = zod.object({
@@ -199,9 +280,25 @@ export const UpdateListingResponse = zod.object({
   type: zod.enum(["service", "product"]),
   price: zod.number(),
   imageUrl: zod.string().nullish(),
+  images: zod.array(zod.string()).optional(),
   whatsapp: zod.string().nullish(),
   paymentMethods: zod.array(zod.string()),
   isActive: zod.boolean(),
+  quantity: zod.number().nullish(),
+  status: zod.enum(["active", "sold", "paused"]),
+  pricingType: zod.enum(["unit", "per_kilo"]),
+  weightKg: zod.number().nullish(),
+  sizes: zod
+    .array(
+      zod.object({
+        name: zod.string(),
+        price: zod.number(),
+        stock: zod.number().nullish(),
+      }),
+    )
+    .nullish(),
+  variantLabel: zod.string().nullish(),
+  requiresSchedule: zod.boolean(),
   createdAt: zod.string(),
 });
 
@@ -219,20 +316,50 @@ export const DeleteListingResponse = zod.object({
 /**
  * @summary Get current provider's listings
  */
-export const GetMyListingsResponseItem = zod.object({
-  id: zod.number(),
-  providerId: zod.number(),
-  categoryId: zod.number(),
-  title: zod.string(),
-  description: zod.string(),
-  type: zod.enum(["service", "product"]),
-  price: zod.number(),
-  imageUrl: zod.string().nullish(),
-  whatsapp: zod.string().nullish(),
-  paymentMethods: zod.array(zod.string()),
-  isActive: zod.boolean(),
-  createdAt: zod.string(),
-});
+export const GetMyListingsResponseItem = zod
+  .object({
+    id: zod.number(),
+    providerId: zod.number(),
+    categoryId: zod.number(),
+    title: zod.string(),
+    description: zod.string(),
+    type: zod.enum(["service", "product"]),
+    price: zod.number(),
+    imageUrl: zod.string().nullish(),
+    images: zod.array(zod.string()).optional(),
+    whatsapp: zod.string().nullish(),
+    paymentMethods: zod.array(zod.string()),
+    isActive: zod.boolean(),
+    quantity: zod.number().nullish(),
+    status: zod.enum(["active", "sold", "paused"]),
+    pricingType: zod.enum(["unit", "per_kilo"]),
+    weightKg: zod.number().nullish(),
+    sizes: zod
+      .array(
+        zod.object({
+          name: zod.string(),
+          price: zod.number(),
+          stock: zod.number().nullish(),
+        }),
+      )
+      .nullish(),
+    variantLabel: zod.string().nullish(),
+    requiresSchedule: zod.boolean(),
+    createdAt: zod.string(),
+  })
+  .and(
+    zod.object({
+      category: zod
+        .object({
+          id: zod.number(),
+          name: zod.string(),
+          icon: zod.string().nullish(),
+          type: zod.enum(["service", "product"]),
+          description: zod.string().nullish(),
+        })
+        .optional(),
+    }),
+  );
 export const GetMyListingsResponse = zod.array(GetMyListingsResponseItem);
 
 /**
@@ -242,7 +369,8 @@ export const GetFeaturedListingsResponseItem = zod.object({
   category: zod.object({
     id: zod.number(),
     name: zod.string(),
-    icon: zod.string(),
+    icon: zod.string().nullish(),
+    type: zod.enum(["service", "product"]),
     description: zod.string().nullish(),
   }),
   listings: zod.array(
@@ -255,23 +383,41 @@ export const GetFeaturedListingsResponseItem = zod.object({
       type: zod.enum(["service", "product"]),
       price: zod.number(),
       imageUrl: zod.string().nullish(),
+      images: zod.array(zod.string()).optional(),
       whatsapp: zod.string().nullish(),
       paymentMethods: zod.array(zod.string()),
       isActive: zod.boolean(),
+      quantity: zod.number().nullish(),
+      status: zod.enum(["active", "sold", "paused"]),
+      pricingType: zod.enum(["unit", "per_kilo"]),
+      weightKg: zod.number().nullish(),
+      sizes: zod
+        .array(
+          zod.object({
+            name: zod.string(),
+            price: zod.number(),
+            stock: zod.number().nullish(),
+          }),
+        )
+        .nullish(),
+      variantLabel: zod.string().nullish(),
+      requiresSchedule: zod.boolean(),
       createdAt: zod.string(),
       provider: zod.object({
         id: zod.number(),
         name: zod.string(),
         email: zod.string(),
-        role: zod.enum(["provider", "client"]),
+        role: zod.enum(["provider", "client", "admin"]),
         phone: zod.string().nullish(),
         avatarUrl: zod.string().nullish(),
+        locality: zod.string().nullish(),
         createdAt: zod.string(),
       }),
       category: zod.object({
         id: zod.number(),
         name: zod.string(),
-        icon: zod.string(),
+        icon: zod.string().nullish(),
+        type: zod.enum(["service", "product"]),
         description: zod.string().nullish(),
       }),
     }),
@@ -294,18 +440,20 @@ export const GetConversationsResponseItem = zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client"]),
+    role: zod.enum(["provider", "client", "admin"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
+    locality: zod.string().nullish(),
     createdAt: zod.string(),
   }),
   provider: zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client"]),
+    role: zod.enum(["provider", "client", "admin"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
+    locality: zod.string().nullish(),
     createdAt: zod.string(),
   }),
   listing: zod
@@ -318,23 +466,41 @@ export const GetConversationsResponseItem = zod.object({
       type: zod.enum(["service", "product"]),
       price: zod.number(),
       imageUrl: zod.string().nullish(),
+      images: zod.array(zod.string()).optional(),
       whatsapp: zod.string().nullish(),
       paymentMethods: zod.array(zod.string()),
       isActive: zod.boolean(),
+      quantity: zod.number().nullish(),
+      status: zod.enum(["active", "sold", "paused"]),
+      pricingType: zod.enum(["unit", "per_kilo"]),
+      weightKg: zod.number().nullish(),
+      sizes: zod
+        .array(
+          zod.object({
+            name: zod.string(),
+            price: zod.number(),
+            stock: zod.number().nullish(),
+          }),
+        )
+        .nullish(),
+      variantLabel: zod.string().nullish(),
+      requiresSchedule: zod.boolean(),
       createdAt: zod.string(),
       provider: zod.object({
         id: zod.number(),
         name: zod.string(),
         email: zod.string(),
-        role: zod.enum(["provider", "client"]),
+        role: zod.enum(["provider", "client", "admin"]),
         phone: zod.string().nullish(),
         avatarUrl: zod.string().nullish(),
+        locality: zod.string().nullish(),
         createdAt: zod.string(),
       }),
       category: zod.object({
         id: zod.number(),
         name: zod.string(),
-        icon: zod.string(),
+        icon: zod.string().nullish(),
+        type: zod.enum(["service", "product"]),
         description: zod.string().nullish(),
       }),
     })
@@ -351,9 +517,10 @@ export const GetConversationsResponseItem = zod.object({
         id: zod.number(),
         name: zod.string(),
         email: zod.string(),
-        role: zod.enum(["provider", "client"]),
+        role: zod.enum(["provider", "client", "admin"]),
         phone: zod.string().nullish(),
         avatarUrl: zod.string().nullish(),
+        locality: zod.string().nullish(),
         createdAt: zod.string(),
       }),
     })
@@ -388,9 +555,10 @@ export const GetMessagesResponseItem = zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client"]),
+    role: zod.enum(["provider", "client", "admin"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
+    locality: zod.string().nullish(),
     createdAt: zod.string(),
   }),
 });
@@ -418,3 +586,388 @@ export const UploadImageBody = zod.object({
 export const UploadImageResponse = zod.object({
   url: zod.string(),
 });
+
+/**
+ * @summary Get all users (admin only)
+ */
+export const AdminGetUsersResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.enum(["provider", "client", "admin"]),
+  phone: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  locality: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+export const AdminGetUsersResponse = zod.array(AdminGetUsersResponseItem);
+
+/**
+ * @summary Update a user (admin only)
+ */
+export const AdminUpdateUserParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminUpdateUserBody = zod.object({
+  name: zod.string().nullish(),
+  email: zod.string().nullish(),
+  password: zod.string().nullish(),
+  role: zod
+    .union([
+      zod.literal("provider"),
+      zod.literal("client"),
+      zod.literal("admin"),
+      zod.literal(null),
+    ])
+    .nullish(),
+  phone: zod.string().nullish(),
+  locality: zod.string().nullish(),
+});
+
+export const AdminUpdateUserResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.enum(["provider", "client", "admin"]),
+  phone: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  locality: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Delete a user (admin only)
+ */
+export const AdminDeleteUserParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminDeleteUserResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Get all listings (admin only)
+ */
+export const AdminGetListingsResponseItem = zod.object({
+  id: zod.number(),
+  providerId: zod.number(),
+  categoryId: zod.number(),
+  title: zod.string(),
+  description: zod.string(),
+  type: zod.enum(["service", "product"]),
+  price: zod.number(),
+  imageUrl: zod.string().nullish(),
+  images: zod.array(zod.string()).optional(),
+  whatsapp: zod.string().nullish(),
+  paymentMethods: zod.array(zod.string()),
+  isActive: zod.boolean(),
+  quantity: zod.number().nullish(),
+  status: zod.enum(["active", "sold", "paused"]),
+  pricingType: zod.enum(["unit", "per_kilo"]),
+  weightKg: zod.number().nullish(),
+  sizes: zod
+    .array(
+      zod.object({
+        name: zod.string(),
+        price: zod.number(),
+        stock: zod.number().nullish(),
+      }),
+    )
+    .nullish(),
+  variantLabel: zod.string().nullish(),
+  requiresSchedule: zod.boolean(),
+  createdAt: zod.string(),
+  provider: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    email: zod.string(),
+    role: zod.enum(["provider", "client", "admin"]),
+    phone: zod.string().nullish(),
+    avatarUrl: zod.string().nullish(),
+    locality: zod.string().nullish(),
+    createdAt: zod.string(),
+  }),
+  category: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    icon: zod.string().nullish(),
+    type: zod.enum(["service", "product"]),
+    description: zod.string().nullish(),
+  }),
+});
+export const AdminGetListingsResponse = zod.array(AdminGetListingsResponseItem);
+
+/**
+ * @summary Delete any listing (admin only)
+ */
+export const AdminDeleteListingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminDeleteListingResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Get platform stats (admin only)
+ */
+export const AdminGetStatsResponse = zod.object({
+  totalUsers: zod.number(),
+  totalProviders: zod.number(),
+  totalClients: zod.number(),
+  totalListings: zod.number(),
+  activeListings: zod.number(),
+  totalConversations: zod.number(),
+  totalMessages: zod.number(),
+});
+
+/**
+ * @summary Create a category (admin only)
+ */
+export const AdminCreateCategoryBody = zod.object({
+  name: zod.string(),
+  icon: zod.string().nullish(),
+  type: zod.enum(["service", "product"]),
+  description: zod.string().nullish(),
+});
+
+/**
+ * @summary Update a category (admin only)
+ */
+export const AdminUpdateCategoryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminUpdateCategoryBody = zod.object({
+  name: zod.string().nullish(),
+  icon: zod.string().nullish(),
+  type: zod
+    .union([zod.literal("service"), zod.literal("product"), zod.literal(null)])
+    .nullish(),
+  description: zod.string().nullish(),
+});
+
+export const AdminUpdateCategoryResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  icon: zod.string().nullish(),
+  type: zod.enum(["service", "product"]),
+  description: zod.string().nullish(),
+});
+
+/**
+ * @summary Delete a category (admin only)
+ */
+export const AdminDeleteCategoryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminDeleteCategoryResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Create or get support conversation with admin
+ */
+export const CreateSupportConversationResponse = zod.object({
+  id: zod.number(),
+  clientId: zod.number(),
+  providerId: zod.number(),
+  listingId: zod.number().nullish(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Get current user's bookings (as client or provider)
+ */
+export const GetMyBookingsResponseItem = zod.object({
+  id: zod.number(),
+  listingId: zod.number(),
+  clientId: zod.number(),
+  providerId: zod.number(),
+  status: zod.enum([
+    "pending",
+    "confirmed",
+    "in_progress",
+    "completed",
+    "delivered",
+    "cancelled",
+  ]),
+  scheduledDate: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  quantity: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+  listing: zod.object({
+    id: zod.number(),
+    providerId: zod.number(),
+    categoryId: zod.number(),
+    title: zod.string(),
+    description: zod.string(),
+    type: zod.enum(["service", "product"]),
+    price: zod.number(),
+    imageUrl: zod.string().nullish(),
+    images: zod.array(zod.string()).optional(),
+    whatsapp: zod.string().nullish(),
+    paymentMethods: zod.array(zod.string()),
+    isActive: zod.boolean(),
+    quantity: zod.number().nullish(),
+    status: zod.enum(["active", "sold", "paused"]),
+    pricingType: zod.enum(["unit", "per_kilo"]),
+    weightKg: zod.number().nullish(),
+    sizes: zod
+      .array(
+        zod.object({
+          name: zod.string(),
+          price: zod.number(),
+          stock: zod.number().nullish(),
+        }),
+      )
+      .nullish(),
+    variantLabel: zod.string().nullish(),
+    requiresSchedule: zod.boolean(),
+    createdAt: zod.string(),
+  }),
+  client: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    email: zod.string(),
+    role: zod.enum(["provider", "client", "admin"]),
+    phone: zod.string().nullish(),
+    avatarUrl: zod.string().nullish(),
+    locality: zod.string().nullish(),
+    createdAt: zod.string(),
+  }),
+  provider: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    email: zod.string(),
+    role: zod.enum(["provider", "client", "admin"]),
+    phone: zod.string().nullish(),
+    avatarUrl: zod.string().nullish(),
+    locality: zod.string().nullish(),
+    createdAt: zod.string(),
+  }),
+});
+export const GetMyBookingsResponse = zod.array(GetMyBookingsResponseItem);
+
+/**
+ * @summary Create a booking for a listing
+ */
+export const CreateBookingBody = zod.object({
+  listingId: zod.number(),
+  scheduledDate: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  quantity: zod.number().optional(),
+});
+
+/**
+ * @summary Update booking status (confirm, start, complete, deliver)
+ */
+export const UpdateBookingStatusParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateBookingStatusBody = zod.object({
+  status: zod.enum([
+    "confirmed",
+    "in_progress",
+    "completed",
+    "delivered",
+    "cancelled",
+  ]),
+});
+
+export const UpdateBookingStatusResponse = zod.object({
+  id: zod.number(),
+  listingId: zod.number(),
+  clientId: zod.number(),
+  providerId: zod.number(),
+  status: zod.enum([
+    "pending",
+    "confirmed",
+    "in_progress",
+    "completed",
+    "delivered",
+    "cancelled",
+  ]),
+  scheduledDate: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  quantity: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Edit booking details (scheduledDate, notes) - provider only
+ */
+export const UpdateBookingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateBookingBody = zod.object({
+  scheduledDate: zod.string().nullish(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateBookingResponse = zod.object({
+  id: zod.number(),
+  listingId: zod.number(),
+  clientId: zod.number(),
+  providerId: zod.number(),
+  status: zod.enum([
+    "pending",
+    "confirmed",
+    "in_progress",
+    "completed",
+    "delivered",
+    "cancelled",
+  ]),
+  scheduledDate: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  quantity: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Leave a review after booking completion
+ */
+export const CreateReviewBody = zod.object({
+  bookingId: zod.number(),
+  rating: zod.number(),
+  comment: zod.string().nullish(),
+});
+
+/**
+ * @summary Get reviews for a listing
+ */
+export const GetListingReviewsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetListingReviewsResponseItem = zod.object({
+  id: zod.number(),
+  bookingId: zod.number(),
+  listingId: zod.number(),
+  reviewerId: zod.number(),
+  providerId: zod.number(),
+  rating: zod.number(),
+  comment: zod.string().nullish(),
+  createdAt: zod.string(),
+  reviewer: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    email: zod.string(),
+    role: zod.enum(["provider", "client", "admin"]),
+    phone: zod.string().nullish(),
+    avatarUrl: zod.string().nullish(),
+    locality: zod.string().nullish(),
+    createdAt: zod.string(),
+  }),
+});
+export const GetListingReviewsResponse = zod.array(
+  GetListingReviewsResponseItem,
+);

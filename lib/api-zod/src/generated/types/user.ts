@@ -16,5 +16,7 @@ export interface User {
   phone?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  locality?: string | null;
   createdAt: string;
 }

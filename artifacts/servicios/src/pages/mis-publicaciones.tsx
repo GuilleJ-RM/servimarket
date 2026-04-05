@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { useGetMyListings, useUpdateListing, useDeleteListing, getGetMyListingsQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { PlusCircle, Edit, Trash2, Eye, ExternalLink } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Eye, ExternalLink, Package, ShoppingBag } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -75,6 +75,21 @@ export default function MisPublicaciones() {
     );
   };
 
+  const handleMarkAsSold = (id: number) => {
+    updateListing.mutate(
+      { id, data: { status: "sold", isActive: false } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetMyListingsQueryKey() });
+          toast({ title: "Publicación marcada como vendida" });
+        },
+        onError: () => {
+          toast({ title: "Error al actualizar", variant: "destructive" });
+        }
+      }
+    );
+  };
+
   return (
     <Layout>
       <div className="bg-muted/30 py-8 border-b">
@@ -113,16 +128,21 @@ export default function MisPublicaciones() {
         ) : (
           <div className="grid grid-cols-1 gap-6">
             {listings?.map((listing) => (
-              <div key={listing.id} className={`flex flex-col sm:flex-row gap-6 p-6 rounded-2xl border-2 shadow-sm transition-all ${!listing.isActive ? 'opacity-70 bg-muted/30' : 'bg-card'}`}>
+              <div key={listing.id} className={`flex flex-col sm:flex-row gap-6 p-6 rounded-2xl border-2 shadow-sm transition-all ${listing.status === 'sold' ? 'opacity-60 bg-red-50/30' : !listing.isActive ? 'opacity-70 bg-muted/30' : 'bg-card'}`}>
                 <div className="w-full sm:w-48 aspect-video sm:aspect-square bg-muted rounded-xl overflow-hidden flex-shrink-0 relative">
                   {listing.imageUrl ? (
                     <img src={listing.imageUrl} alt={listing.title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-4xl text-primary/20 bg-primary/5">
-                      {listing.category.icon}
+                      {listing.category?.icon || "📦"}
                     </div>
                   )}
-                  {!listing.isActive && (
+                  {listing.status === 'sold' && (
+                    <div className="absolute inset-0 bg-red-900/60 backdrop-blur-sm flex items-center justify-center font-bold text-lg text-white">
+                      Vendido
+                    </div>
+                  )}
+                  {listing.status !== 'sold' && !listing.isActive && (
                     <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center font-bold text-lg">
                       Pausado
                     </div>
@@ -132,11 +152,20 @@ export default function MisPublicaciones() {
                 <div className="flex-1 flex flex-col min-w-0">
                   <div className="flex justify-between items-start gap-4 mb-2">
                     <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="secondary" className="text-xs">{listing.category.name}</Badge>
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <Badge variant="secondary" className="text-xs">{listing.category?.name || "Sin categoría"}</Badge>
                         <Badge variant="outline" className="text-xs bg-background">
                           {listing.type === "service" ? "Servicio" : "Producto"}
                         </Badge>
+                        {listing.status === 'sold' && (
+                          <Badge variant="destructive" className="text-xs">Vendido</Badge>
+                        )}
+                        {listing.type === "product" && listing.quantity !== null && listing.quantity !== undefined && listing.status !== 'sold' && (
+                          <Badge variant="outline" className="text-xs">
+                            <Package className="w-3 h-3 mr-1" />
+                            {listing.quantity} disponibles
+                          </Badge>
+                        )}
                       </div>
                       <h3 className="text-xl font-bold line-clamp-1">{listing.title}</h3>
                     </div>
@@ -151,14 +180,29 @@ export default function MisPublicaciones() {
                   
                   <div className="flex flex-wrap items-center gap-4 mt-auto pt-4 border-t">
                     <div className="flex items-center gap-2 mr-auto">
-                      <Switch 
-                        checked={listing.isActive} 
-                        onCheckedChange={() => handleToggleActive(listing.id, listing.isActive)}
-                        id={`switch-${listing.id}`}
-                      />
-                      <label htmlFor={`switch-${listing.id}`} className="text-sm font-medium cursor-pointer">
-                        {listing.isActive ? 'Activo' : 'Pausado'}
-                      </label>
+                      {listing.status !== 'sold' && (
+                        <>
+                          <Switch 
+                            checked={listing.isActive} 
+                            onCheckedChange={() => handleToggleActive(listing.id, listing.isActive)}
+                            id={`switch-${listing.id}`}
+                          />
+                          <label htmlFor={`switch-${listing.id}`} className="text-sm font-medium cursor-pointer">
+                            {listing.isActive ? 'Activo' : 'Pausado'}
+                          </label>
+                        </>
+                      )}
+                      {listing.type === "product" && listing.status !== 'sold' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="rounded-lg ml-2 text-orange-600 border-orange-300 hover:bg-orange-50"
+                          onClick={() => handleMarkAsSold(listing.id)}
+                        >
+                          <ShoppingBag className="w-4 h-4 mr-1" />
+                          Marcar vendido
+                        </Button>
+                      )}
                     </div>
                     
                     <div className="flex items-center gap-2">

@@ -10,7 +10,10 @@ import {
   LayoutDashboard, 
   ListPlus, 
   PlusCircle,
-  ShoppingBag
+  ShoppingBag,
+  Shield,
+  Headphones,
+  ClipboardList,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -21,10 +24,29 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useCreateSupportConversation } from "@workspace/api-client-react";
+import { useToast } from "@/hooks/use-toast";
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { user, logout, isProvider } = useAuth();
+  const { user, logout, isProvider, isAdmin } = useAuth();
   const [location, setLocation] = useLocation();
+  const { toast } = useToast();
+  const supportMutation = useCreateSupportConversation();
+
+  const handleSupport = () => {
+    supportMutation.mutate(undefined, {
+      onSuccess: (conv) => {
+        setLocation(`/mensajes/${conv.id}`);
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "No se pudo iniciar conversación con soporte.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   const NavLinks = () => (
     <>
@@ -32,10 +54,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
         Explorar
       </Link>
       {user && (
-        <Link href="/mensajes" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
-          <MessageSquare className="w-4 h-4" />
-          Mensajes
-        </Link>
+        <>
+          <Link href="/mensajes" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Mensajes
+          </Link>
+          <Link href="/pedidos" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
+            <ClipboardList className="w-4 h-4" />
+            Pedidos
+          </Link>
+        </>
       )}
       {isProvider && (
         <>
@@ -55,14 +83,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Button>
         </>
       )}
+      {isAdmin && (
+        <Link href="/admin" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
+          <Shield className="w-4 h-4" />
+          Admin
+        </Link>
+      )}
     </>
   );
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+        <div className="container mx-auto px-3 md:px-4 h-14 md:h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4 md:gap-6">
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden">
@@ -85,6 +119,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             <Link href="/" className="flex items-center gap-2 text-xl font-bold text-primary hidden md:flex">
               <ShoppingBag className="w-6 h-6" />
+              ServiMarket
+            </Link>
+            <Link href="/" className="flex items-center gap-1.5 text-lg font-bold text-primary md:hidden">
+              <ShoppingBag className="w-5 h-5" />
               ServiMarket
             </Link>
           </div>
@@ -115,6 +153,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  {isAdmin && (
+                    <DropdownMenuItem onClick={() => setLocation("/admin")} className="cursor-pointer">
+                      <Shield className="mr-2 h-4 w-4" />
+                      <span>Panel Admin</span>
+                    </DropdownMenuItem>
+                  )}
+                  {!isAdmin && (
+                    <DropdownMenuItem onClick={handleSupport} className="cursor-pointer" disabled={supportMutation.isPending}>
+                      <Headphones className="mr-2 h-4 w-4" />
+                      <span>Contactar Soporte</span>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout} className="text-destructive cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Cerrar sesión</span>
@@ -135,9 +186,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="flex-1 flex flex-col">{children}</main>
-      <footer className="border-t py-6 md:py-0">
-        <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row mx-auto px-4">
-          <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
+      <footer className="border-t py-4 md:py-0">
+        <div className="container flex flex-col items-center justify-between gap-3 md:h-16 md:flex-row mx-auto px-4">
+          <p className="text-center text-xs md:text-sm leading-loose text-muted-foreground md:text-left">
             Construido para conectar la comunidad. ServiMarket &copy; {new Date().getFullYear()}.
           </p>
         </div>

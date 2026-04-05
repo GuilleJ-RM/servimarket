@@ -11,6 +11,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ShoppingBag, User as UserIcon, Store } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const ARGENTINA_PROVINCES = [
+  "Buenos Aires",
+  "CABA",
+  "Catamarca",
+  "Chaco",
+  "Chubut",
+  "Córdoba",
+  "Corrientes",
+  "Entre Ríos",
+  "Formosa",
+  "Jujuy",
+  "La Pampa",
+  "La Rioja",
+  "Mendoza",
+  "Misiones",
+  "Neuquén",
+  "Río Negro",
+  "Salta",
+  "San Juan",
+  "San Luis",
+  "Santa Cruz",
+  "Santa Fe",
+  "Santiago del Estero",
+  "Tierra del Fuego",
+  "Tucumán",
+] as const;
 
 const registerSchema = z.object({
   name: z.string().min(2, "El nombre es muy corto"),
@@ -18,7 +46,11 @@ const registerSchema = z.object({
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   phone: z.string().optional(),
   role: z.enum(["client", "provider"]),
-});
+  locality: z.string().optional(),
+}).refine(
+  (data) => data.role !== "provider" || (data.locality && data.locality.length > 0),
+  { message: "La provincia es obligatoria para proveedores", path: ["locality"] }
+);
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
@@ -35,8 +67,11 @@ export default function Register() {
       password: "",
       phone: "",
       role: "client",
+      locality: "",
     },
   });
+
+  const selectedRole = form.watch("role");
 
   const onSubmit = (data: RegisterFormValues) => {
     registerMutation.mutate(
@@ -181,6 +216,33 @@ export default function Register() {
                     </FormItem>
                   )}
                 />
+
+                {selectedRole === "provider" && (
+                  <FormField
+                    control={form.control}
+                    name="locality"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Provincia</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona tu provincia" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-[220px]">
+                            {ARGENTINA_PROVINCES.map((province) => (
+                              <SelectItem key={province} value={province}>
+                                {province}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
                 
                 <Button type="submit" className="w-full font-semibold" disabled={registerMutation.isPending}>
                   {registerMutation.isPending ? "Registrando..." : "Crear cuenta"}

@@ -13,6 +13,8 @@ tags:
     description: Authentication
   - name: users
     description: User management
+  - name: admin
+    description: Admin operations
   - name: listings
     description: Service and product listings
   - name: categories
@@ -152,6 +154,10 @@ paths:
           in: query
           schema:
             type: ["string", "null"]
+        - name: locality
+          in: query
+          schema:
+            type: ["string", "null"]
       responses:
         "200":
           description: List of listings
@@ -266,7 +272,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Listing"
+                  $ref: "#/components/schemas/MyListing"
 
   /listings/featured:
     get:
@@ -380,6 +386,362 @@ paths:
               schema:
                 $ref: "#/components/schemas/UploadImageResponse"
 
+  /admin/users:
+    get:
+      operationId: adminGetUsers
+      tags: [admin]
+      summary: Get all users (admin only)
+      responses:
+        "200":
+          description: List of all users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /admin/users/{id}:
+    patch:
+      operationId: adminUpdateUser
+      tags: [admin]
+      summary: Update a user (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateUserBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: adminDeleteUser
+      tags: [admin]
+      summary: Delete a user (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Cannot delete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/listings:
+    get:
+      operationId: adminGetListings
+      tags: [admin]
+      summary: Get all listings (admin only)
+      responses:
+        "200":
+          description: List of all listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListingWithProvider"
+
+  /admin/listings/{id}:
+    delete:
+      operationId: adminDeleteListing
+      tags: [admin]
+      summary: Delete any listing (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/stats:
+    get:
+      operationId: adminGetStats
+      tags: [admin]
+      summary: Get platform stats (admin only)
+      responses:
+        "200":
+          description: Platform statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/categories:
+    post:
+      operationId: adminCreateCategory
+      tags: [admin]
+      summary: Create a category (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryBody"
+      responses:
+        "201":
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/categories/{id}:
+    patch:
+      operationId: adminUpdateCategory
+      tags: [admin]
+      summary: Update a category (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryBody"
+      responses:
+        "200":
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+
+    delete:
+      operationId: adminDeleteCategory
+      tags: [admin]
+      summary: Delete a category (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Category in use
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /support/conversation:
+    post:
+      operationId: createSupportConversation
+      tags: [conversations]
+      summary: Create or get support conversation with admin
+      responses:
+        "200":
+          description: Support conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "201":
+          description: Support conversation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /bookings:
+    get:
+      operationId: getMyBookings
+      tags: [bookings]
+      summary: Get current user's bookings (as client or provider)
+      responses:
+        "200":
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BookingWithDetails"
+
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      summary: Create a booking for a listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBookingBody"
+      responses:
+        "201":
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /bookings/{id}/status:
+    patch:
+      operationId: updateBookingStatus
+      tags: [bookings]
+      summary: Update booking status (confirm, start, complete, deliver)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBookingStatusBody"
+      responses:
+        "200":
+          description: Updated booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          description: Invalid status transition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /bookings/{id}:
+    patch:
+      operationId: updateBooking
+      tags: [bookings]
+      summary: Edit booking details (scheduledDate, notes) - provider only
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBookingBody"
+      responses:
+        "200":
+          description: Updated booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "403":
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /reviews:
+    post:
+      operationId: createReview
+      tags: [reviews]
+      summary: Leave a review after booking completion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReviewBody"
+      responses:
+        "201":
+          description: Review created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /listings/{id}/reviews:
+    get:
+      operationId: getListingReviews
+      tags: [reviews]
+      summary: Get reviews for a listing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReviewWithUser"
+
 components:
   schemas:
     HealthStatus:
@@ -417,8 +779,10 @@ components:
           type: string
         role:
           type: string
-          enum: [provider, client]
+          enum: [provider, client, admin]
         phone:
+          type: ["string", "null"]
+        locality:
           type: ["string", "null"]
       required:
         - name
@@ -448,10 +812,12 @@ components:
           type: string
         role:
           type: string
-          enum: [provider, client]
+          enum: [provider, client, admin]
         phone:
           type: ["string", "null"]
         avatarUrl:
+          type: ["string", "null"]
+        locality:
           type: ["string", "null"]
         createdAt:
           type: string
@@ -478,13 +844,16 @@ components:
         name:
           type: string
         icon:
+          type: ["string", "null"]
+        type:
           type: string
+          enum: [service, product]
         description:
           type: ["string", "null"]
       required:
         - id
         - name
-        - icon
+        - type
 
     Listing:
       type: object
@@ -506,6 +875,10 @@ components:
           type: number
         imageUrl:
           type: ["string", "null"]
+        images:
+          type: array
+          items:
+            type: string
         whatsapp:
           type: ["string", "null"]
         paymentMethods:
@@ -513,6 +886,34 @@ components:
           items:
             type: string
         isActive:
+          type: boolean
+        quantity:
+          type: ["integer", "null"]
+        status:
+          type: string
+          enum: [active, sold, paused]
+        pricingType:
+          type: string
+          enum: [unit, per_kilo]
+        weightKg:
+          type: ["number", "null"]
+        sizes:
+          type: ["array", "null"]
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              price:
+                type: number
+              stock:
+                type: ["integer", "null"]
+            required:
+              - name
+              - price
+        variantLabel:
+          type: ["string", "null"]
+        requiresSchedule:
           type: boolean
         createdAt:
           type: string
@@ -526,7 +927,18 @@ components:
         - price
         - paymentMethods
         - isActive
+        - status
+        - pricingType
+        - requiresSchedule
         - createdAt
+
+    MyListing:
+      allOf:
+        - $ref: "#/components/schemas/Listing"
+        - type: object
+          properties:
+            category:
+              $ref: "#/components/schemas/Category"
 
     ListingWithProvider:
       type: object
@@ -548,6 +960,10 @@ components:
           type: number
         imageUrl:
           type: ["string", "null"]
+        images:
+          type: array
+          items:
+            type: string
         whatsapp:
           type: ["string", "null"]
         paymentMethods:
@@ -555,6 +971,34 @@ components:
           items:
             type: string
         isActive:
+          type: boolean
+        quantity:
+          type: ["integer", "null"]
+        status:
+          type: string
+          enum: [active, sold, paused]
+        pricingType:
+          type: string
+          enum: [unit, per_kilo]
+        weightKg:
+          type: ["number", "null"]
+        sizes:
+          type: ["array", "null"]
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              price:
+                type: number
+              stock:
+                type: ["integer", "null"]
+            required:
+              - name
+              - price
+        variantLabel:
+          type: ["string", "null"]
+        requiresSchedule:
           type: boolean
         createdAt:
           type: string
@@ -572,6 +1016,9 @@ components:
         - price
         - paymentMethods
         - isActive
+        - status
+        - pricingType
+        - requiresSchedule
         - createdAt
         - provider
         - category
@@ -592,12 +1039,41 @@ components:
           type: number
         imageUrl:
           type: ["string", "null"]
+        images:
+          type: array
+          items:
+            type: string
         whatsapp:
           type: ["string", "null"]
         paymentMethods:
           type: array
           items:
             type: string
+        quantity:
+          type: ["integer", "null"]
+        pricingType:
+          type: string
+          enum: [unit, per_kilo]
+        weightKg:
+          type: ["number", "null"]
+        sizes:
+          type: ["array", "null"]
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              price:
+                type: number
+              stock:
+                type: ["integer", "null"]
+            required:
+              - name
+              - price
+        variantLabel:
+          type: ["string", "null"]
+        requiresSchedule:
+          type: ["boolean", "null"]
       required:
         - categoryId
         - title
@@ -622,6 +1098,10 @@ components:
           type: ["number", "null"]
         imageUrl:
           type: ["string", "null"]
+        images:
+          type: ["array", "null"]
+          items:
+            type: string
         whatsapp:
           type: ["string", "null"]
         paymentMethods:
@@ -629,6 +1109,34 @@ components:
           items:
             type: string
         isActive:
+          type: ["boolean", "null"]
+        quantity:
+          type: ["integer", "null"]
+        status:
+          type: ["string", "null"]
+          enum: [active, sold, paused, null]
+        pricingType:
+          type: ["string", "null"]
+          enum: [unit, per_kilo, null]
+        weightKg:
+          type: ["number", "null"]
+        sizes:
+          type: ["array", "null"]
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              price:
+                type: number
+              stock:
+                type: ["integer", "null"]
+            required:
+              - name
+              - price
+        variantLabel:
+          type: ["string", "null"]
+        requiresSchedule:
           type: ["boolean", "null"]
 
     CategoryWithListings:
@@ -757,3 +1265,255 @@ components:
           type: string
       required:
         - url
+
+    AdminStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalProviders:
+          type: integer
+        totalClients:
+          type: integer
+        totalListings:
+          type: integer
+        activeListings:
+          type: integer
+        totalConversations:
+          type: integer
+        totalMessages:
+          type: integer
+      required:
+        - totalUsers
+        - totalProviders
+        - totalClients
+        - totalListings
+        - activeListings
+        - totalConversations
+        - totalMessages
+
+    AdminUpdateUserBody:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        password:
+          type: ["string", "null"]
+        role:
+          type: ["string", "null"]
+          enum: [provider, client, admin, null]
+        phone:
+          type: ["string", "null"]
+        locality:
+          type: ["string", "null"]
+
+    CreateCategoryBody:
+      type: object
+      properties:
+        name:
+          type: string
+        icon:
+          type: ["string", "null"]
+        type:
+          type: string
+          enum: [service, product]
+        description:
+          type: ["string", "null"]
+      required:
+        - name
+        - type
+
+    UpdateCategoryBody:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        icon:
+          type: ["string", "null"]
+        type:
+          type: ["string", "null"]
+          enum: [service, product, null]
+        description:
+          type: ["string", "null"]
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+        listingId:
+          type: integer
+        clientId:
+          type: integer
+        providerId:
+          type: integer
+        status:
+          type: string
+          enum: [pending, confirmed, in_progress, completed, delivered, cancelled]
+        scheduledDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        quantity:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - listingId
+        - clientId
+        - providerId
+        - status
+        - quantity
+        - createdAt
+        - updatedAt
+
+    BookingWithDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+        listingId:
+          type: integer
+        clientId:
+          type: integer
+        providerId:
+          type: integer
+        status:
+          type: string
+          enum: [pending, confirmed, in_progress, completed, delivered, cancelled]
+        scheduledDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        quantity:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        listing:
+          $ref: "#/components/schemas/Listing"
+        client:
+          $ref: "#/components/schemas/User"
+        provider:
+          $ref: "#/components/schemas/User"
+      required:
+        - id
+        - listingId
+        - clientId
+        - providerId
+        - status
+        - quantity
+        - createdAt
+        - updatedAt
+        - listing
+        - client
+        - provider
+
+    CreateBookingBody:
+      type: object
+      properties:
+        listingId:
+          type: integer
+        scheduledDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        quantity:
+          type: integer
+      required:
+        - listingId
+
+    UpdateBookingStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [confirmed, in_progress, completed, delivered, cancelled]
+      required:
+        - status
+
+    UpdateBookingBody:
+      type: object
+      properties:
+        scheduledDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: integer
+        bookingId:
+          type: integer
+        listingId:
+          type: integer
+        reviewerId:
+          type: integer
+        providerId:
+          type: integer
+        rating:
+          type: integer
+        comment:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - bookingId
+        - listingId
+        - reviewerId
+        - providerId
+        - rating
+        - createdAt
+
+    ReviewWithUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        bookingId:
+          type: integer
+        listingId:
+          type: integer
+        reviewerId:
+          type: integer
+        providerId:
+          type: integer
+        rating:
+          type: integer
+        comment:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        reviewer:
+          $ref: "#/components/schemas/User"
+      required:
+        - id
+        - bookingId
+        - listingId
+        - reviewerId
+        - providerId
+        - rating
+        - createdAt
+        - reviewer
+
+    CreateReviewBody:
+      type: object
+      properties:
+        bookingId:
+          type: integer
+        rating:
+          type: integer
+        comment:
+          type: ["string", "null"]
+      required:
+        - bookingId
+        - rating

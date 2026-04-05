@@ -12,4 +12,5 @@ export type RegisterBodyRole =
 export const RegisterBodyRole = {
   provider: "provider",
   client: "client",
+  admin: "admin",
 } as const;

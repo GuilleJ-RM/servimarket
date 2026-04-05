@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Marketplace de Servicios"
+version = "1.0.0"
+id = "artifacts/servicios"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22320
+
+[services.development]
+run = "pnpm --filter @workspace/servicios run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/servicios", "run", "build" ]
+publicDir = "artifacts/servicios/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22320"
+BASE_PATH = "/"

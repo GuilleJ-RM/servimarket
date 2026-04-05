@@ -1,0 +1,203 @@
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRegister } from "@workspace/api-client-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Link, useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ShoppingBag, User as UserIcon, Store } from "lucide-react";
+import { Label } from "@/components/ui/label";
+
+const registerSchema = z.object({
+  name: z.string().min(2, "El nombre es muy corto"),
+  email: z.string().email("Correo electrónico inválido"),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  phone: z.string().optional(),
+  role: z.enum(["client", "provider"]),
+});
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
+
+export default function Register() {
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const registerMutation = useRegister();
+
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      phone: "",
+      role: "client",
+    },
+  });
+
+  const onSubmit = (data: RegisterFormValues) => {
+    registerMutation.mutate(
+      { data },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Cuenta creada exitosamente",
+            description: "Bienvenido a ServiMarket",
+          });
+          window.location.href = "/";
+        },
+        onError: (error) => {
+          toast({
+            title: "Error al registrarse",
+            description: error.error || "Ha ocurrido un error inesperado",
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="flex min-h-[100dvh] w-full items-center justify-center p-4 bg-muted/30 py-12">
+      <div className="w-full max-w-lg space-y-6">
+        <div className="flex justify-center">
+          <Link href="/" className="flex items-center gap-2 text-2xl font-bold text-primary hover:opacity-90">
+            <ShoppingBag className="w-8 h-8" />
+            ServiMarket
+          </Link>
+        </div>
+        <Card className="border-2 shadow-lg">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-bold">Crear una cuenta</CardTitle>
+            <CardDescription>
+              Únete a nuestra comunidad de profesionales y clientes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>¿Qué buscas en ServiMarket?</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="grid grid-cols-2 gap-4"
+                        >
+                          <div>
+                            <RadioGroupItem
+                              value="client"
+                              id="client"
+                              className="peer sr-only"
+                            />
+                            <Label
+                              htmlFor="client"
+                              className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-transparent p-4 hover:bg-muted/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
+                            >
+                              <UserIcon className="mb-2 h-6 w-6" />
+                              <span className="font-semibold">Soy Cliente</span>
+                              <span className="text-xs text-muted-foreground text-center mt-1">Busco servicios</span>
+                            </Label>
+                          </div>
+                          <div>
+                            <RadioGroupItem
+                              value="provider"
+                              id="provider"
+                              className="peer sr-only"
+                            />
+                            <Label
+                              htmlFor="provider"
+                              className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-transparent p-4 hover:bg-muted/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
+                            >
+                              <Store className="mb-2 h-6 w-6" />
+                              <span className="font-semibold">Soy Profesional</span>
+                              <span className="text-xs text-muted-foreground text-center mt-1">Ofrezco servicios</span>
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre completo</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Juan Pérez" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Correo electrónico</FormLabel>
+                      <FormControl>
+                        <Input placeholder="tu@correo.com" type="email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contraseña</FormLabel>
+                      <FormControl>
+                        <Input placeholder="••••••••" type="password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Teléfono (Opcional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+123456789" type="tel" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button type="submit" className="w-full font-semibold" disabled={registerMutation.isPending}>
+                  {registerMutation.isPending ? "Registrando..." : "Crear cuenta"}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-4 text-center">
+            <div className="text-sm text-muted-foreground">
+              ¿Ya tienes una cuenta?{" "}
+              <Link href="/login" className="text-primary hover:underline font-medium">
+                Inicia sesión aquí
+              </Link>
+            </div>
+          </CardFooter>
+        </Card>
+      </div>
+    </div>
+  );
+}

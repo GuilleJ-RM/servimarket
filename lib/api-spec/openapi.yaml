@@ -1,22 +1,33 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Marketplace de Servicios API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: users
+    description: User management
+  - name: listings
+    description: Service and product listings
+  - name: categories
+    description: Categories
+  - name: messages
+    description: Internal messaging
+  - name: conversations
+    description: Conversations
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +35,351 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /categories:
+    get:
+      operationId: getCategories
+      tags: [categories]
+      summary: List all categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  /listings:
+    get:
+      operationId: getListings
+      tags: [listings]
+      summary: List all active listings
+      parameters:
+        - name: categoryId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: type
+          in: query
+          schema:
+            type: ["string", "null"]
+            enum: [service, product, null]
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: List of listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListingWithProvider"
+
+    post:
+      operationId: createListing
+      tags: [listings]
+      summary: Create a new listing (providers only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateListingBody"
+      responses:
+        "201":
+          description: Listing created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /listings/{id}:
+    get:
+      operationId: getListing
+      tags: [listings]
+      summary: Get listing by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Listing details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingWithProvider"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      operationId: updateListing
+      tags: [listings]
+      summary: Update a listing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateListingBody"
+      responses:
+        "200":
+          description: Updated listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+
+    delete:
+      operationId: deleteListing
+      tags: [listings]
+      summary: Delete a listing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /listings/my:
+    get:
+      operationId: getMyListings
+      tags: [listings]
+      summary: Get current provider's listings
+      responses:
+        "200":
+          description: My listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Listing"
+
+  /listings/featured:
+    get:
+      operationId: getFeaturedListings
+      tags: [listings]
+      summary: Get featured/top listings per category
+      responses:
+        "200":
+          description: Featured listings grouped by category
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryWithListings"
+
+  /conversations:
+    get:
+      operationId: getConversations
+      tags: [conversations]
+      summary: Get current user's conversations
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConversationWithDetails"
+
+    post:
+      operationId: createConversation
+      tags: [conversations]
+      summary: Start a conversation with a provider about a listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConversationBody"
+      responses:
+        "201":
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{id}/messages:
+    get:
+      operationId: getMessages
+      tags: [messages]
+      summary: Get messages for a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+
+    post:
+      operationId: sendMessage
+      tags: [messages]
+      summary: Send a message in a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageBody"
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /upload/image:
+    post:
+      operationId: uploadImage
+      tags: [listings]
+      summary: Upload an image and get URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadImageBody"
+      responses:
+        "200":
+          description: Image URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadImageResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +390,370 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    RegisterBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [provider, client]
+        phone:
+          type: ["string", "null"]
+      required:
+        - name
+        - email
+        - password
+        - role
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [provider, client]
+        phone:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - role
+        - createdAt
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - user
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        icon:
+          type: string
+        description:
+          type: ["string", "null"]
+      required:
+        - id
+        - name
+        - icon
+
+    Listing:
+      type: object
+      properties:
+        id:
+          type: integer
+        providerId:
+          type: integer
+        categoryId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [service, product]
+        price:
+          type: number
+        imageUrl:
+          type: ["string", "null"]
+        whatsapp:
+          type: ["string", "null"]
+        paymentMethods:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - providerId
+        - categoryId
+        - title
+        - description
+        - type
+        - price
+        - paymentMethods
+        - isActive
+        - createdAt
+
+    ListingWithProvider:
+      type: object
+      properties:
+        id:
+          type: integer
+        providerId:
+          type: integer
+        categoryId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [service, product]
+        price:
+          type: number
+        imageUrl:
+          type: ["string", "null"]
+        whatsapp:
+          type: ["string", "null"]
+        paymentMethods:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+        provider:
+          $ref: "#/components/schemas/User"
+        category:
+          $ref: "#/components/schemas/Category"
+      required:
+        - id
+        - providerId
+        - categoryId
+        - title
+        - description
+        - type
+        - price
+        - paymentMethods
+        - isActive
+        - createdAt
+        - provider
+        - category
+
+    CreateListingBody:
+      type: object
+      properties:
+        categoryId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [service, product]
+        price:
+          type: number
+        imageUrl:
+          type: ["string", "null"]
+        whatsapp:
+          type: ["string", "null"]
+        paymentMethods:
+          type: array
+          items:
+            type: string
+      required:
+        - categoryId
+        - title
+        - description
+        - type
+        - price
+        - paymentMethods
+
+    UpdateListingBody:
+      type: object
+      properties:
+        categoryId:
+          type: ["integer", "null"]
+        title:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        type:
+          type: ["string", "null"]
+          enum: [service, product, null]
+        price:
+          type: ["number", "null"]
+        imageUrl:
+          type: ["string", "null"]
+        whatsapp:
+          type: ["string", "null"]
+        paymentMethods:
+          type: ["array", "null"]
+          items:
+            type: string
+        isActive:
+          type: ["boolean", "null"]
+
+    CategoryWithListings:
+      type: object
+      properties:
+        category:
+          $ref: "#/components/schemas/Category"
+        listings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ListingWithProvider"
+      required:
+        - category
+        - listings
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        providerId:
+          type: integer
+        listingId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - clientId
+        - providerId
+        - createdAt
+
+    ConversationWithDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        providerId:
+          type: integer
+        listingId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+        client:
+          $ref: "#/components/schemas/User"
+        provider:
+          $ref: "#/components/schemas/User"
+        listing:
+          $ref: "#/components/schemas/ListingWithProvider"
+        lastMessage:
+          $ref: "#/components/schemas/Message"
+        unreadCount:
+          type: integer
+      required:
+        - id
+        - clientId
+        - providerId
+        - createdAt
+        - client
+        - provider
+        - unreadCount
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        senderId:
+          type: integer
+        content:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+        sender:
+          $ref: "#/components/schemas/User"
+      required:
+        - id
+        - conversationId
+        - senderId
+        - content
+        - isRead
+        - createdAt
+        - sender
+
+    SendMessageBody:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+
+    CreateConversationBody:
+      type: object
+      properties:
+        providerId:
+          type: integer
+        listingId:
+          type: ["integer", "null"]
+      required:
+        - providerId
+
+    UploadImageBody:
+      type: object
+      properties:
+        base64:
+          type: string
+        filename:
+          type: string
+      required:
+        - base64
+        - filename
+
+    UploadImageResponse:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url

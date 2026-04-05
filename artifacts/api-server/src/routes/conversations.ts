@@ -1,0 +1,265 @@
+import { Router, type IRouter } from "express";
+import { db, conversationsTable, messagesTable, usersTable, listingsTable, categoriesTable } from "@workspace/db";
+import { eq, or, and, desc } from "drizzle-orm";
+import { CreateConversationBody, SendMessageBody } from "@workspace/api-zod";
+import { inArray } from "drizzle-orm";
+
+const router: IRouter = Router();
+
+function formatUser(u: typeof usersTable.$inferSelect) {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    phone: u.phone,
+    avatarUrl: u.avatarUrl,
+    createdAt: u.createdAt.toISOString(),
+  };
+}
+
+router.get("/conversations", async (req, res): Promise<void> => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    res.status(401).json({ error: "No autenticado" });
+    return;
+  }
+
+  const convs = await db
+    .select()
+    .from(conversationsTable)
+    .where(or(eq(conversationsTable.clientId, userId), eq(conversationsTable.providerId, userId)))
+    .orderBy(desc(conversationsTable.createdAt));
+
+  if (convs.length === 0) {
+    res.json([]);
+    return;
+  }
+
+  const userIds = [...new Set([...convs.map(c => c.clientId), ...convs.map(c => c.providerId)])];
+  const users = await db.select().from(usersTable).where(inArray(usersTable.id, userIds));
+  const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+
+  const listingIds = convs.map(c => c.listingId).filter((id): id is number => id !== null);
+  let listingMap: Record<number, { listing: typeof listingsTable.$inferSelect, provider: typeof usersTable.$inferSelect, category: typeof categoriesTable.$inferSelect }> = {};
+  if (listingIds.length > 0) {
+    const listings = await db.select().from(listingsTable).where(inArray(listingsTable.id, listingIds));
+    const catIds = [...new Set(listings.map(l => l.categoryId))];
+    const cats = await db.select().from(categoriesTable).where(inArray(categoriesTable.id, catIds));
+    const catMap = Object.fromEntries(cats.map(c => [c.id, c]));
+    listings.forEach(l => {
+      listingMap[l.id] = { listing: l, provider: userMap[l.providerId], category: catMap[l.categoryId] };
+    });
+  }
+
+  const result = [];
+  for (const conv of convs) {
+    const lastMessages = await db
+      .select()
+      .from(messagesTable)
+      .where(eq(messagesTable.conversationId, conv.id))
+      .orderBy(desc(messagesTable.createdAt))
+      .limit(1);
+
+    const unreadMessages = await db
+      .select()
+      .from(messagesTable)
+      .where(and(eq(messagesTable.conversationId, conv.id), eq(messagesTable.isRead, false)));
+
+    const unreadCount = unreadMessages.filter(m => m.senderId !== userId).length;
+
+    const lastMessage = lastMessages[0];
+    let lastMsgFormatted = undefined;
+    if (lastMessage) {
+      lastMsgFormatted = {
+        id: lastMessage.id,
+        conversationId: lastMessage.conversationId,
+        senderId: lastMessage.senderId,
+        content: lastMessage.content,
+        isRead: lastMessage.isRead,
+        createdAt: lastMessage.createdAt.toISOString(),
+        sender: formatUser(userMap[lastMessage.senderId]),
+      };
+    }
+
+    const listingEntry = conv.listingId ? listingMap[conv.listingId] : null;
+    let listingFormatted = undefined;
+    if (listingEntry) {
+      const { listing: l, provider: p, category: cat } = listingEntry;
+      listingFormatted = {
+        id: l.id,
+        providerId: l.providerId,
+        categoryId: l.categoryId,
+        title: l.title,
+        description: l.description,
+        type: l.type,
+        price: l.price,
+        imageUrl: l.imageUrl,
+        whatsapp: l.whatsapp,
+        paymentMethods: l.paymentMethods,
+        isActive: l.isActive,
+        createdAt: l.createdAt.toISOString(),
+        provider: p ? formatUser(p) : formatUser(userMap[l.providerId]),
+        category: { id: cat.id, name: cat.name, icon: cat.icon, description: cat.description },
+      };
+    }
+
+    result.push({
+      id: conv.id,
+      clientId: conv.clientId,
+      providerId: conv.providerId,
+      listingId: conv.listingId,
+      createdAt: conv.createdAt.toISOString(),
+      client: formatUser(userMap[conv.clientId]),
+      provider: formatUser(userMap[conv.providerId]),
+      listing: listingFormatted,
+      lastMessage: lastMsgFormatted,
+      unreadCount,
+    });
+  }
+
+  res.json(result);
+});
+
+router.post("/conversations", async (req, res): Promise<void> => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    res.status(401).json({ error: "No autenticado" });
+    return;
+  }
+
+  const parsed = CreateConversationBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { providerId, listingId } = parsed.data;
+
+  // Check if conversation already exists
+  const conditions = [eq(conversationsTable.clientId, userId), eq(conversationsTable.providerId, providerId)];
+  const existing = await db.select().from(conversationsTable).where(and(...conditions));
+
+  if (existing.length > 0) {
+    const conv = existing[0];
+    res.status(201).json({
+      id: conv.id,
+      clientId: conv.clientId,
+      providerId: conv.providerId,
+      listingId: conv.listingId,
+      createdAt: conv.createdAt.toISOString(),
+    });
+    return;
+  }
+
+  const [conv] = await db.insert(conversationsTable).values({
+    clientId: userId,
+    providerId,
+    listingId: listingId ?? null,
+  }).returning();
+
+  res.status(201).json({
+    id: conv.id,
+    clientId: conv.clientId,
+    providerId: conv.providerId,
+    listingId: conv.listingId,
+    createdAt: conv.createdAt.toISOString(),
+  });
+});
+
+router.get("/conversations/:id/messages", async (req, res): Promise<void> => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    res.status(401).json({ error: "No autenticado" });
+    return;
+  }
+
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "ID inválido" });
+    return;
+  }
+
+  const [conv] = await db.select().from(conversationsTable).where(eq(conversationsTable.id, id));
+  if (!conv || (conv.clientId !== userId && conv.providerId !== userId)) {
+    res.status(403).json({ error: "Sin acceso" });
+    return;
+  }
+
+  const messages = await db
+    .select()
+    .from(messagesTable)
+    .where(eq(messagesTable.conversationId, id))
+    .orderBy(messagesTable.createdAt);
+
+  // Mark messages as read
+  await db
+    .update(messagesTable)
+    .set({ isRead: true })
+    .where(and(eq(messagesTable.conversationId, id), eq(messagesTable.isRead, false)));
+
+  const senderIds = [...new Set(messages.map(m => m.senderId))];
+  let senderMap: Record<number, typeof usersTable.$inferSelect> = {};
+  if (senderIds.length > 0) {
+    const senders = await db.select().from(usersTable).where(inArray(usersTable.id, senderIds));
+    senderMap = Object.fromEntries(senders.map(s => [s.id, s]));
+  }
+
+  res.json(messages.map(m => ({
+    id: m.id,
+    conversationId: m.conversationId,
+    senderId: m.senderId,
+    content: m.content,
+    isRead: m.isRead,
+    createdAt: m.createdAt.toISOString(),
+    sender: formatUser(senderMap[m.senderId]),
+  })));
+});
+
+router.post("/conversations/:id/messages", async (req, res): Promise<void> => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    res.status(401).json({ error: "No autenticado" });
+    return;
+  }
+
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "ID inválido" });
+    return;
+  }
+
+  const [conv] = await db.select().from(conversationsTable).where(eq(conversationsTable.id, id));
+  if (!conv || (conv.clientId !== userId && conv.providerId !== userId)) {
+    res.status(403).json({ error: "Sin acceso" });
+    return;
+  }
+
+  const parsed = SendMessageBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [message] = await db.insert(messagesTable).values({
+    conversationId: id,
+    senderId: userId,
+    content: parsed.data.content,
+  }).returning();
+
+  const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+
+  res.status(201).json({
+    id: message.id,
+    conversationId: message.conversationId,
+    senderId: message.senderId,
+    content: message.content,
+    isRead: message.isRead,
+    createdAt: message.createdAt.toISOString(),
+    sender: formatUser(sender),
+  });
+});
+
+export default router;

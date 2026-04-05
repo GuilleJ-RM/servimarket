@@ -1,13 +1,15 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import cookieSession from "cookie-session";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
-declare module "express-serve-static-core" {
-  interface Request {
-    session: { userId?: number } | null;
+declare global {
+  namespace Express {
+    interface Request {
+      session: { userId?: number } | null;
+    }
   }
 }
 

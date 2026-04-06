@@ -1,5 +1,5 @@
 import { Layout } from "@/components/layout/layout";
-import { useGetJob, useApplyToJob, getGetJobQueryKey } from "@workspace/api-client-react";
+import { useGetJob, useApplyToJob, useCheckApplied, getGetJobQueryKey, getCheckAppliedQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import { useParams, Link } from "wouter";
 import { MapPin, Building2, Clock, DollarSign, FileText, Send, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useQueryClient } from "@tanstack/react-query";
 
 const MODALITY_LABELS: Record<string, string> = {
@@ -35,10 +36,15 @@ export default function Trabajo() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const applyMutation = useApplyToJob();
+  const { data: appliedCheck } = useCheckApplied(Number(params.id), {
+    query: { queryKey: getCheckAppliedQueryKey(Number(params.id)), enabled: !!user && user.role !== "company" },
+  });
 
   const [coverLetter, setCoverLetter] = useState("");
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [applied, setApplied] = useState(false);
+
+  const alreadyApplied = applied || appliedCheck?.applied === true;
 
   const handleApply = () => {
     if (!job) return;
@@ -175,10 +181,10 @@ export default function Trabajo() {
                   </div>
                 ) : isOwnJob ? (
                   <p className="text-sm text-muted-foreground text-center">Esta es tu vacante</p>
-                ) : applied ? (
+                ) : alreadyApplied ? (
                   <div className="text-center space-y-2">
                     <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto" />
-                    <p className="font-semibold text-green-600">¡Postulación enviada!</p>
+                    <p className="font-semibold text-green-600">Ya estás postulado</p>
                     <p className="text-xs text-muted-foreground">La empresa revisará tu perfil</p>
                   </div>
                 ) : (
@@ -234,11 +240,34 @@ export default function Trabajo() {
                                   </div>
                                 ))}
                               </RadioGroup>
+                            ) : q.questionType === "multiple_choice" && q.options ? (
+                              <div className="space-y-2">
+                                {(q.options as string[]).map((opt) => {
+                                  const selected = (answers[q.id] || "").split(", ").filter(Boolean);
+                                  const isChecked = selected.includes(opt);
+                                  return (
+                                    <div key={opt} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`q${q.id}-${opt}`}
+                                        checked={isChecked}
+                                        onCheckedChange={(checked) => {
+                                          const newSelected = checked
+                                            ? [...selected, opt]
+                                            : selected.filter((s) => s !== opt);
+                                          setAnswers(prev => ({ ...prev, [q.id]: newSelected.join(", ") }));
+                                        }}
+                                      />
+                                      <Label htmlFor={`q${q.id}-${opt}`} className="text-sm">{opt}</Label>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             ) : (
-                              <Input
+                              <Textarea
                                 placeholder="Tu respuesta..."
                                 value={answers[q.id] || ""}
                                 onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                                rows={2}
                               />
                             )}
                           </div>

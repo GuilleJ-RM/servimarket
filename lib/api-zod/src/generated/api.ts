@@ -56,6 +56,9 @@ export const LoginResponse = zod.object({
     companyApproved: zod.boolean(),
     cvUrl: zod.string().nullish(),
     cvPublic: zod.boolean(),
+    cvCategories: zod
+      .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+      .optional(),
     createdAt: zod.string(),
   }),
 });
@@ -87,6 +90,9 @@ export const GetMeResponse = zod.object({
   companyApproved: zod.boolean(),
   cvUrl: zod.string().nullish(),
   cvPublic: zod.boolean(),
+  cvCategories: zod
+    .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+    .optional(),
   createdAt: zod.string(),
 });
 
@@ -102,6 +108,13 @@ export const UpdateProfileBody = zod.object({
   notifyEmail: zod.boolean().nullish(),
   cvUrl: zod.string().nullish(),
   cvPublic: zod.boolean().nullish(),
+  cvCategories: zod
+    .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+    .optional(),
+  companyName: zod.string().nullish(),
+  cuit: zod.string().nullish(),
+  companyAddress: zod.string().nullish(),
+  companyIndustry: zod.string().nullish(),
 });
 
 export const UpdateProfileResponse = zod.object({
@@ -121,6 +134,9 @@ export const UpdateProfileResponse = zod.object({
   companyApproved: zod.boolean(),
   cvUrl: zod.string().nullish(),
   cvPublic: zod.boolean(),
+  cvCategories: zod
+    .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+    .optional(),
   createdAt: zod.string(),
 });
 
@@ -219,6 +235,9 @@ export const GetListingsResponseItem = zod.object({
     companyApproved: zod.boolean(),
     cvUrl: zod.string().nullish(),
     cvPublic: zod.boolean(),
+    cvCategories: zod
+      .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+      .optional(),
     createdAt: zod.string(),
   }),
   category: zod.object({
@@ -314,6 +333,9 @@ export const GetListingResponse = zod.object({
     companyApproved: zod.boolean(),
     cvUrl: zod.string().nullish(),
     cvPublic: zod.boolean(),
+    cvCategories: zod
+      .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+      .optional(),
     createdAt: zod.string(),
   }),
   category: zod.object({
@@ -523,6 +545,9 @@ export const GetFeaturedListingsResponseItem = zod.object({
         companyApproved: zod.boolean(),
         cvUrl: zod.string().nullish(),
         cvPublic: zod.boolean(),
+        cvCategories: zod
+          .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+          .optional(),
         createdAt: zod.string(),
       }),
       category: zod.object({
@@ -565,6 +590,9 @@ export const GetConversationsResponseItem = zod.object({
     companyApproved: zod.boolean(),
     cvUrl: zod.string().nullish(),
     cvPublic: zod.boolean(),
+    cvCategories: zod
+      .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+      .optional(),
     createdAt: zod.string(),
   }),
   provider: zod.object({
@@ -584,6 +612,9 @@ export const GetConversationsResponseItem = zod.object({
     companyApproved: zod.boolean(),
     cvUrl: zod.string().nullish(),
     cvPublic: zod.boolean(),
+    cvCategories: zod
+      .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+      .optional(),
     createdAt: zod.string(),
   }),
   listing: zod
@@ -634,6 +665,9 @@ export const GetConversationsResponseItem = zod.object({
         companyApproved: zod.boolean(),
         cvUrl: zod.string().nullish(),
         cvPublic: zod.boolean(),
+        cvCategories: zod
+          .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+          .optional(),
         createdAt: zod.string(),
       }),
       category: zod.object({
@@ -670,6 +704,9 @@ export const GetConversationsResponseItem = zod.object({
         companyApproved: zod.boolean(),
         cvUrl: zod.string().nullish(),
         cvPublic: zod.boolean(),
+        cvCategories: zod
+          .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+          .optional(),
         createdAt: zod.string(),
       }),
     })
@@ -717,6 +754,9 @@ export const GetMessagesResponseItem = zod.object({
     companyApproved: zod.boolean(),
     cvUrl: zod.string().nullish(),
     cvPublic: zod.boolean(),
+    cvCategories: zod
+      .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+      .optional(),
     createdAt: zod.string(),
   }),
 });
@@ -765,6 +805,9 @@ export const AdminGetUsersResponseItem = zod.object({
   companyApproved: zod.boolean(),
   cvUrl: zod.string().nullish(),
   cvPublic: zod.boolean(),
+  cvCategories: zod
+    .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+    .optional(),
   createdAt: zod.string(),
 });
 export const AdminGetUsersResponse = zod.array(AdminGetUsersResponseItem);
@@ -809,6 +852,9 @@ export const AdminUpdateUserResponse = zod.object({
   companyApproved: zod.boolean(),
   cvUrl: zod.string().nullish(),
   cvPublic: zod.boolean(),
+  cvCategories: zod
+    .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+    .optional(),
   createdAt: zod.string(),
 });
 
@@ -873,6 +919,9 @@ export const AdminGetListingsResponseItem = zod.object({
     companyApproved: zod.boolean(),
     cvUrl: zod.string().nullish(),
     cvPublic: zod.boolean(),
+    cvCategories: zod
+      .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+      .optional(),
     createdAt: zod.string(),
   }),
   category: zod.object({
@@ -1099,6 +1148,9 @@ export const GetMyBookingsResponseItem = zod.object({
     companyApproved: zod.boolean(),
     cvUrl: zod.string().nullish(),
     cvPublic: zod.boolean(),
+    cvCategories: zod
+      .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+      .optional(),
     createdAt: zod.string(),
   }),
   provider: zod.object({
@@ -1118,6 +1170,9 @@ export const GetMyBookingsResponseItem = zod.object({
     companyApproved: zod.boolean(),
     cvUrl: zod.string().nullish(),
     cvPublic: zod.boolean(),
+    cvCategories: zod
+      .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+      .optional(),
     createdAt: zod.string(),
   }),
 });
@@ -1244,6 +1299,9 @@ export const GetListingReviewsResponseItem = zod.object({
     companyApproved: zod.boolean(),
     cvUrl: zod.string().nullish(),
     cvPublic: zod.boolean(),
+    cvCategories: zod
+      .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+      .optional(),
     createdAt: zod.string(),
   }),
 });
@@ -1353,7 +1411,7 @@ export const GetMyApplicationsResponseItem = zod
     jobId: zod.number(),
     applicantId: zod.number(),
     coverLetter: zod.string().nullish(),
-    status: zod.enum(["pending", "reviewed", "accepted", "rejected"]),
+    status: zod.enum(["pending", "visto", "rechazado", "finalista"]),
     createdAt: zod.string(),
   })
   .and(
@@ -1552,7 +1610,7 @@ export const GetJobApplicationsResponseItem = zod
     jobId: zod.number(),
     applicantId: zod.number(),
     coverLetter: zod.string().nullish(),
-    status: zod.enum(["pending", "reviewed", "accepted", "rejected"]),
+    status: zod.enum(["pending", "visto", "rechazado", "finalista"]),
     createdAt: zod.string(),
   })
   .and(
@@ -1603,7 +1661,7 @@ export const UpdateApplicationStatusParams = zod.object({
 });
 
 export const UpdateApplicationStatusBody = zod.object({
-  status: zod.enum(["pending", "reviewed", "accepted", "rejected"]),
+  status: zod.enum(["pending", "visto", "rechazado", "finalista"]),
 });
 
 export const UpdateApplicationStatusResponse = zod.object({
@@ -1611,7 +1669,7 @@ export const UpdateApplicationStatusResponse = zod.object({
   jobId: zod.number(),
   applicantId: zod.number(),
   coverLetter: zod.string().nullish(),
-  status: zod.enum(["pending", "reviewed", "accepted", "rejected"]),
+  status: zod.enum(["pending", "visto", "rechazado", "finalista"]),
   createdAt: zod.string(),
 });
 
@@ -1621,6 +1679,7 @@ export const UpdateApplicationStatusResponse = zod.object({
 export const GetPublicCvsQueryParams = zod.object({
   search: zod.coerce.string().nullish(),
   locality: zod.coerce.string().nullish(),
+  categoryId: zod.coerce.number().nullish(),
 });
 
 export const GetPublicCvsResponseItem = zod.object({
@@ -1631,9 +1690,66 @@ export const GetPublicCvsResponseItem = zod.object({
   avatarUrl: zod.string().nullish(),
   locality: zod.string().nullish(),
   cvUrl: zod.string().nullish(),
+  cvCategories: zod
+    .union([zod.array(zod.number()), zod.enum(["all"]), zod.null()])
+    .optional(),
   createdAt: zod.string(),
 });
 export const GetPublicCvsResponse = zod.array(GetPublicCvsResponseItem);
+
+/**
+ * @summary List all industries (rubros)
+ */
+export const GetIndustriesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+});
+export const GetIndustriesResponse = zod.array(GetIndustriesResponseItem);
+
+/**
+ * @summary Create an industry (admin only)
+ */
+export const AdminCreateIndustryBody = zod.object({
+  name: zod.string(),
+});
+
+/**
+ * @summary Update an industry (admin only)
+ */
+export const AdminUpdateIndustryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminUpdateIndustryBody = zod.object({
+  name: zod.string(),
+});
+
+export const AdminUpdateIndustryResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+});
+
+/**
+ * @summary Delete an industry (admin only)
+ */
+export const AdminDeleteIndustryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminDeleteIndustryResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Check if current user already applied to a job
+ */
+export const CheckAppliedParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CheckAppliedResponse = zod.object({
+  applied: zod.boolean(),
+});
 
 /**
  * @summary Get all company accounts (admin only)

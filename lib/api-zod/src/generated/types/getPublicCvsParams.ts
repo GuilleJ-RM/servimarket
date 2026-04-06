@@ -15,4 +15,8 @@ export type GetPublicCvsParams = {
    * @nullable
    */
   locality?: string | null;
+  /**
+   * @nullable
+   */
+  categoryId?: number | null;
 };

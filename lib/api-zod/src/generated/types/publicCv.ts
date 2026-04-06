@@ -18,5 +18,6 @@ export interface PublicCv {
   locality?: string | null;
   /** @nullable */
   cvUrl?: string | null;
+  cvCategories?: number[] | "all" | null;
   createdAt: string;
 }

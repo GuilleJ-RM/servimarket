@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, jobPostingsTable, jobQuestionsTable, jobApplicationsTable, jobAnswersTable } from "@workspace/db";
-import { eq, and, desc, ilike, or, inArray } from "drizzle-orm";
+import { db, usersTable, jobPostingsTable, jobQuestionsTable, jobApplicationsTable, jobAnswersTable, industriesTable, categoriesTable } from "@workspace/db";
+import { eq, and, desc, ilike, or, inArray, isNotNull } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -41,6 +41,49 @@ router.get("/jobs", async (req, res): Promise<void> => {
       companyName: row.users.companyName,
       avatarUrl: row.users.avatarUrl,
       locality: row.users.locality,
+    },
+  })));
+});
+
+// ── GET /jobs/my — Company's own job postings ───────────────────────
+router.get("/jobs/my", async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
+
+  const jobs = await db
+    .select()
+    .from(jobPostingsTable)
+    .where(eq(jobPostingsTable.companyId, userId))
+    .orderBy(desc(jobPostingsTable.createdAt));
+
+  res.json(jobs.map(j => ({ ...j, createdAt: j.createdAt.toISOString() })));
+});
+
+// ── GET /jobs/my-applications — Client sees their applications ──────
+router.get("/jobs/my-applications", async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
+
+  const applications = await db
+    .select()
+    .from(jobApplicationsTable)
+    .innerJoin(jobPostingsTable, eq(jobApplicationsTable.jobId, jobPostingsTable.id))
+    .innerJoin(usersTable, eq(jobPostingsTable.companyId, usersTable.id))
+    .where(eq(jobApplicationsTable.applicantId, userId))
+    .orderBy(desc(jobApplicationsTable.createdAt));
+
+  res.json(applications.map(row => ({
+    ...row.job_applications,
+    createdAt: row.job_applications.createdAt.toISOString(),
+    job: {
+      ...row.job_postings,
+      createdAt: row.job_postings.createdAt.toISOString(),
+    },
+    company: {
+      id: row.users.id,
+      name: row.users.name,
+      companyName: row.users.companyName,
+      avatarUrl: row.users.avatarUrl,
     },
   })));
 });
@@ -198,20 +241,6 @@ router.delete("/jobs/:id", async (req, res): Promise<void> => {
   res.json({ success: true });
 });
 
-// ── GET /jobs/my — Company's own job postings ───────────────────────
-router.get("/jobs/my", async (req, res): Promise<void> => {
-  const userId = getUserId(req);
-  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
-
-  const jobs = await db
-    .select()
-    .from(jobPostingsTable)
-    .where(eq(jobPostingsTable.companyId, userId))
-    .orderBy(desc(jobPostingsTable.createdAt));
-
-  res.json(jobs.map(j => ({ ...j, createdAt: j.createdAt.toISOString() })));
-});
-
 // ── POST /jobs/:id/apply — Apply to a job ───────────────────────
 router.post("/jobs/:id/apply", async (req, res): Promise<void> => {
   const userId = getUserId(req);
@@ -327,42 +356,13 @@ router.patch("/jobs/applications/:id/status", async (req, res): Promise<void> =>
   }
 
   const { status } = req.body;
-  if (!["pending", "reviewed", "accepted", "rejected"].includes(status)) {
+  if (!["pending", "visto", "rechazado", "finalista"].includes(status)) {
     res.status(400).json({ error: "Estado inválido" });
     return;
   }
 
   const [updated] = await db.update(jobApplicationsTable).set({ status }).where(eq(jobApplicationsTable.id, appId)).returning();
   res.json({ ...updated, createdAt: updated.createdAt.toISOString() });
-});
-
-// ── GET /jobs/my-applications — Client sees their applications ──────
-router.get("/jobs/my-applications", async (req, res): Promise<void> => {
-  const userId = getUserId(req);
-  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
-
-  const applications = await db
-    .select()
-    .from(jobApplicationsTable)
-    .innerJoin(jobPostingsTable, eq(jobApplicationsTable.jobId, jobPostingsTable.id))
-    .innerJoin(usersTable, eq(jobPostingsTable.companyId, usersTable.id))
-    .where(eq(jobApplicationsTable.applicantId, userId))
-    .orderBy(desc(jobApplicationsTable.createdAt));
-
-  res.json(applications.map(row => ({
-    ...row.job_applications,
-    createdAt: row.job_applications.createdAt.toISOString(),
-    job: {
-      ...row.job_postings,
-      createdAt: row.job_postings.createdAt.toISOString(),
-    },
-    company: {
-      id: row.users.id,
-      name: row.users.name,
-      companyName: row.users.companyName,
-      avatarUrl: row.users.avatarUrl,
-    },
-  })));
 });
 
 // ── GET /cvs/public — Companies view public CVs ────────────────────
@@ -376,9 +376,9 @@ router.get("/cvs/public", async (req, res): Promise<void> => {
     return;
   }
 
-  const { search, locality } = req.query as Record<string, string | undefined>;
+  const { search, locality, categoryId } = req.query as Record<string, string | undefined>;
 
-  let query = db.select({
+  const results = await db.select({
     id: usersTable.id,
     name: usersTable.name,
     email: usersTable.email,
@@ -386,18 +386,30 @@ router.get("/cvs/public", async (req, res): Promise<void> => {
     avatarUrl: usersTable.avatarUrl,
     locality: usersTable.locality,
     cvUrl: usersTable.cvUrl,
+    cvCategories: usersTable.cvCategories,
     createdAt: usersTable.createdAt,
   }).from(usersTable).where(
     and(
       eq(usersTable.cvPublic, true),
-      usersTable.cvUrl !== null ? undefined : undefined, // cvUrl is not null check
+      isNotNull(usersTable.cvUrl),
       search ? or(ilike(usersTable.name, `%${search}%`), ilike(usersTable.email, `%${search}%`)) : undefined,
       locality ? ilike(usersTable.locality, `%${locality}%`) : undefined,
     )
   ).orderBy(desc(usersTable.createdAt));
 
-  const results = await query;
-  res.json(results.map(u => ({ ...u, createdAt: u.createdAt.toISOString() })));
+  // Filter by category in application layer (jsonb filtering)
+  let filtered = results;
+  if (categoryId) {
+    const catId = Number(categoryId);
+    filtered = results.filter(u => {
+      const cats = u.cvCategories;
+      if (cats === "all" || cats === null) return true;
+      if (Array.isArray(cats)) return cats.includes(catId);
+      return true;
+    });
+  }
+
+  res.json(filtered.map(u => ({ ...u, createdAt: u.createdAt.toISOString() })));
 });
 
 // ── Admin: GET /admin/companies — List company accounts ─────────────
@@ -454,6 +466,154 @@ router.patch("/admin/companies/:id/approve", async (req, res): Promise<void> => 
   }
 
   res.json({ success: true, companyApproved: updated.companyApproved });
+});
+
+// ── GET /jobs/:id/check-applied — Check if user already applied ─────
+router.get("/jobs/:id/check-applied", async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  if (!userId) { res.json({ applied: false }); return; }
+
+  const jobId = Number(req.params.id);
+  const [existing] = await db.select().from(jobApplicationsTable)
+    .where(and(eq(jobApplicationsTable.jobId, jobId), eq(jobApplicationsTable.applicantId, userId)));
+
+  res.json({ applied: !!existing });
+});
+
+// ── Admin: GET /admin/jobs/:id — Job detail for admin ────────────────
+router.get("/admin/jobs/:id", async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user || user.role !== "admin") {
+    res.status(403).json({ error: "No autorizado" });
+    return;
+  }
+
+  const id = Number(req.params.id);
+  const [job] = await db
+    .select()
+    .from(jobPostingsTable)
+    .innerJoin(usersTable, eq(jobPostingsTable.companyId, usersTable.id))
+    .where(eq(jobPostingsTable.id, id));
+
+  if (!job) {
+    res.status(404).json({ error: "Vacante no encontrada" });
+    return;
+  }
+
+  const questions = await db
+    .select()
+    .from(jobQuestionsTable)
+    .where(eq(jobQuestionsTable.jobId, id))
+    .orderBy(jobQuestionsTable.sortOrder);
+
+  res.json({
+    ...job.job_postings,
+    createdAt: job.job_postings.createdAt.toISOString(),
+    company: {
+      id: job.users.id,
+      name: job.users.name,
+      companyName: job.users.companyName,
+      email: job.users.email,
+      cuit: job.users.cuit,
+      companyAddress: job.users.companyAddress,
+      companyIndustry: job.users.companyIndustry,
+      avatarUrl: job.users.avatarUrl,
+      locality: job.users.locality,
+    },
+    questions,
+  });
+});
+
+// ── GET /industries — List all industries ───────────────────────────
+router.get("/industries", async (_req, res): Promise<void> => {
+  const industries = await db.select().from(industriesTable).orderBy(industriesTable.name);
+  res.json(industries);
+});
+
+// ── Admin: POST /admin/industries — Create industry ─────────────────
+router.post("/admin/industries", async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user || user.role !== "admin") {
+    res.status(403).json({ error: "No autorizado" });
+    return;
+  }
+
+  const { name } = req.body;
+  if (!name || !name.trim()) {
+    res.status(400).json({ error: "El nombre es obligatorio" });
+    return;
+  }
+
+  try {
+    const [industry] = await db.insert(industriesTable).values({ name: name.trim() }).returning();
+    res.status(201).json(industry);
+  } catch (err: any) {
+    if (err?.code === "23505") {
+      res.status(409).json({ error: "Ya existe un rubro con ese nombre" });
+      return;
+    }
+    throw err;
+  }
+});
+
+// ── Admin: PATCH /admin/industries/:id — Update industry ────────────
+router.patch("/admin/industries/:id", async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user || user.role !== "admin") {
+    res.status(403).json({ error: "No autorizado" });
+    return;
+  }
+
+  const id = Number(req.params.id);
+  const { name } = req.body;
+  if (!name || !name.trim()) {
+    res.status(400).json({ error: "El nombre es obligatorio" });
+    return;
+  }
+
+  try {
+    const [updated] = await db.update(industriesTable).set({ name: name.trim() }).where(eq(industriesTable.id, id)).returning();
+    if (!updated) {
+      res.status(404).json({ error: "Rubro no encontrado" });
+      return;
+    }
+    res.json(updated);
+  } catch (err: any) {
+    if (err?.code === "23505") {
+      res.status(409).json({ error: "Ya existe un rubro con ese nombre" });
+      return;
+    }
+    throw err;
+  }
+});
+
+// ── Admin: DELETE /admin/industries/:id — Delete industry ───────────
+router.delete("/admin/industries/:id", async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user || user.role !== "admin") {
+    res.status(403).json({ error: "No autorizado" });
+    return;
+  }
+
+  const id = Number(req.params.id);
+  const [deleted] = await db.delete(industriesTable).where(eq(industriesTable.id, id)).returning();
+  if (!deleted) {
+    res.status(404).json({ error: "Rubro no encontrado" });
+    return;
+  }
+  res.json({ success: true });
 });
 
 export default router;

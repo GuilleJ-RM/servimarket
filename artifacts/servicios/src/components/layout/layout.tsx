@@ -15,6 +15,7 @@ import {
   Headphones,
   ClipboardList,
   Briefcase,
+  FileText,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -80,10 +81,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Badge>
             )}
           </Link>
-          <Link href="/pedidos" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
-            <ClipboardList className="w-4 h-4" />
-            Pedidos
-          </Link>
+          {!isCompany && (
+            <Link href="/pedidos" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
+              <ClipboardList className="w-4 h-4" />
+              Pedidos
+            </Link>
+          )}
         </>
       )}
       {isProvider && (
@@ -109,6 +112,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <Link href="/mis-trabajos" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
             <Briefcase className="w-4 h-4" />
             Mis Vacantes
+          </Link>
+          <Link href="/buscar-cvs" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Buscar CVs
           </Link>
           <Button asChild size="sm" className="ml-2">
             <Link href="/publicar-trabajo">

@@ -86,6 +86,7 @@ export interface User {
   /** @nullable */
   cvUrl?: string | null;
   cvPublic: boolean;
+  cvCategories?: number[] | "all" | null;
   createdAt: string;
 }
 
@@ -818,9 +819,9 @@ export type JobApplicationStatus =
 
 export const JobApplicationStatus = {
   pending: "pending",
-  reviewed: "reviewed",
-  accepted: "accepted",
-  rejected: "rejected",
+  visto: "visto",
+  rechazado: "rechazado",
+  finalista: "finalista",
 } as const;
 
 export interface JobApplication {
@@ -883,9 +884,9 @@ export type UpdateApplicationStatusBodyStatus =
 
 export const UpdateApplicationStatusBodyStatus = {
   pending: "pending",
-  reviewed: "reviewed",
-  accepted: "accepted",
-  rejected: "rejected",
+  visto: "visto",
+  rechazado: "rechazado",
+  finalista: "finalista",
 } as const;
 
 export interface UpdateApplicationStatusBody {
@@ -904,6 +905,7 @@ export interface PublicCv {
   locality?: string | null;
   /** @nullable */
   cvUrl?: string | null;
+  cvCategories?: number[] | "all" | null;
   createdAt: string;
 }
 
@@ -962,6 +964,15 @@ export interface UpdateProfileBody {
   cvUrl?: string | null;
   /** @nullable */
   cvPublic?: boolean | null;
+  cvCategories?: number[] | "all" | null;
+  /** @nullable */
+  companyName?: string | null;
+  /** @nullable */
+  cuit?: string | null;
+  /** @nullable */
+  companyAddress?: string | null;
+  /** @nullable */
+  companyIndustry?: string | null;
 }
 
 export interface ForgotPasswordBody {
@@ -972,6 +983,19 @@ export interface ResetPasswordBody {
   email: string;
   token: string;
   newPassword: string;
+}
+
+export interface Industry {
+  id: number;
+  name: string;
+}
+
+export interface CreateIndustryBody {
+  name: string;
+}
+
+export interface CheckAppliedResponse {
+  applied: boolean;
 }
 
 export type GetListingsParams = {
@@ -1034,6 +1058,10 @@ export type GetPublicCvsParams = {
    * @nullable
    */
   locality?: string | null;
+  /**
+   * @nullable
+   */
+  categoryId?: number | null;
 };
 
 export type AdminApproveCompanyBody = {

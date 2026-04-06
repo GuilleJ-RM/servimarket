@@ -18,8 +18,13 @@ import {
   useAdminApproveCompany,
   useAdminGetJobs,
   useAdminApproveJob,
+  useGetIndustries,
+  useAdminCreateIndustry,
+  useAdminUpdateIndustry,
+  useAdminDeleteIndustry,
   getAdminGetListingsQueryKey,
   getAdminGetJobsQueryKey,
+  getGetIndustriesQueryKey,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +45,7 @@ import {
   Building2,
   CheckCircle2,
   XCircle,
+  Tag,
 } from "lucide-react";
 import {
   Table,
@@ -111,9 +117,18 @@ export default function Admin() {
   const { data: jobs, isLoading: jobsLoading } = useAdminGetJobs();
   const approveJobMutation = useAdminApproveJob();
 
+  const { data: industries, isLoading: industriesLoading } = useGetIndustries();
+  const createIndustryMutation = useAdminCreateIndustry();
+  const updateIndustryMutation = useAdminUpdateIndustry();
+  const deleteIndustryMutation = useAdminDeleteIndustry();
+
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<{ id: number; name: string; icon: string; type: string; description: string } | null>(null);
   const [categoryForm, setCategoryForm] = useState({ name: "", icon: "", type: "service" as string, description: "" });
+
+  const [industryDialogOpen, setIndustryDialogOpen] = useState(false);
+  const [editingIndustry, setEditingIndustry] = useState<{ id: number; name: string } | null>(null);
+  const [industryForm, setIndustryForm] = useState({ name: "" });
 
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -340,6 +355,70 @@ export default function Admin() {
     );
   };
 
+  const openCreateIndustry = () => {
+    setEditingIndustry(null);
+    setIndustryForm({ name: "" });
+    setIndustryDialogOpen(true);
+  };
+
+  const openEditIndustry = (ind: { id: number; name: string }) => {
+    setEditingIndustry(ind);
+    setIndustryForm({ name: ind.name });
+    setIndustryDialogOpen(true);
+  };
+
+  const handleSaveIndustry = () => {
+    if (!industryForm.name.trim()) {
+      toast({ title: "Error", description: "El nombre es obligatorio.", variant: "destructive" });
+      return;
+    }
+    if (editingIndustry) {
+      updateIndustryMutation.mutate(
+        { id: editingIndustry.id, data: { name: industryForm.name.trim() } },
+        {
+          onSuccess: () => {
+            toast({ title: "Rubro actualizado" });
+            queryClient.invalidateQueries({ queryKey: getGetIndustriesQueryKey() });
+            setIndustryDialogOpen(false);
+          },
+          onError: () => {
+            toast({ title: "Error", description: "No se pudo actualizar el rubro.", variant: "destructive" });
+          },
+        }
+      );
+    } else {
+      createIndustryMutation.mutate(
+        { data: { name: industryForm.name.trim() } },
+        {
+          onSuccess: () => {
+            toast({ title: "Rubro creado" });
+            queryClient.invalidateQueries({ queryKey: getGetIndustriesQueryKey() });
+            setIndustryDialogOpen(false);
+          },
+          onError: (err: any) => {
+            toast({ title: "Error", description: err?.data?.error || "No se pudo crear el rubro.", variant: "destructive" });
+          },
+        }
+      );
+    }
+  };
+
+  const handleDeleteIndustry = (id: number, name: string) => {
+    if (!confirm(`¿Eliminar el rubro "${name}"?`)) return;
+    deleteIndustryMutation.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ title: "Rubro eliminado" });
+          queryClient.invalidateQueries({ queryKey: getGetIndustriesQueryKey() });
+        },
+        onError: () => {
+          toast({ title: "Error", description: "No se pudo eliminar el rubro.", variant: "destructive" });
+        },
+      }
+    );
+  };
+
   return (
     <Layout>
       <div className="bg-muted/30 py-6 border-b">
@@ -417,6 +496,9 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="jobs" className="gap-1.5 text-xs sm:text-sm">
               <Briefcase className="h-3.5 w-3.5" /> Vacantes
+            </TabsTrigger>
+            <TabsTrigger value="industries" className="gap-1.5 text-xs sm:text-sm">
+              <Tag className="h-3.5 w-3.5" /> Rubros
             </TabsTrigger>
           </TabsList>
 
@@ -924,6 +1006,77 @@ export default function Admin() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* INDUSTRIES TAB */}
+          <TabsContent value="industries" className="mt-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-3">
+                <CardTitle className="text-lg">Rubros ({industries?.length ?? 0})</CardTitle>
+                <Button onClick={openCreateIndustry} size="sm" className="gap-1.5 h-8 text-xs">
+                  <Plus className="h-3.5 w-3.5" /> Nuevo
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0">
+                {industriesLoading ? (
+                  <p className="text-muted-foreground p-6">Cargando...</p>
+                ) : !industries?.length ? (
+                  <p className="text-muted-foreground text-center p-8">No hay rubros creados. Creá el primero.</p>
+                ) : (
+                  <>
+                    {/* Desktop */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12">ID</TableHead>
+                            <TableHead>Nombre</TableHead>
+                            <TableHead className="text-right">Acciones</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {industries.map((ind) => (
+                            <TableRow key={ind.id}>
+                              <TableCell className="text-xs text-muted-foreground">{ind.id}</TableCell>
+                              <TableCell className="font-medium text-sm">{ind.name}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditIndustry(ind)}>
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteIndustry(ind.id, ind.name)} disabled={deleteIndustryMutation.isPending}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    {/* Mobile */}
+                    <div className="md:hidden space-y-2 p-4">
+                      {industries.map((ind) => (
+                        <div key={ind.id} className="border rounded-lg p-3 flex items-center gap-3">
+                          <Tag className="w-4 h-4 text-muted-foreground" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm">{ind.name}</p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditIndustry(ind)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteIndustry(ind.id, ind.name)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -1031,6 +1184,27 @@ export default function Admin() {
             <Button variant="outline" onClick={() => setUserDialogOpen(false)}>Cancelar</Button>
             <Button onClick={handleSaveUser} disabled={updateUserMutation.isPending}>
               {updateUserMutation.isPending ? "Guardando..." : "Guardar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create/Edit Industry Dialog */}
+      <Dialog open={industryDialogOpen} onOpenChange={setIndustryDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{editingIndustry ? "Editar Rubro" : "Nuevo Rubro"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Nombre *</Label>
+              <Input placeholder="Ej: Tecnología" value={industryForm.name} onChange={(e) => setIndustryForm({ name: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIndustryDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveIndustry} disabled={createIndustryMutation.isPending || updateIndustryMutation.isPending}>
+              {editingIndustry ? "Guardar" : "Crear"}
             </Button>
           </DialogFooter>
         </DialogContent>

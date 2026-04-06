@@ -28,12 +28,14 @@ import type {
   BookingWithDetails,
   Category,
   CategoryWithListings,
+  CheckAppliedResponse,
   CompanyAccount,
   Conversation,
   ConversationWithDetails,
   CreateBookingBody,
   CreateCategoryBody,
   CreateConversationBody,
+  CreateIndustryBody,
   CreateJobBody,
   CreateListingBody,
   CreateReviewBody,
@@ -43,6 +45,7 @@ import type {
   GetListingsParams,
   GetPublicCvsParams,
   HealthStatus,
+  Industry,
   JobApplication,
   JobApplicationWithDetails,
   JobApplicationWithJob,
@@ -4299,6 +4302,425 @@ export function useGetPublicCvs<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetPublicCvsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all industries (rubros)
+ */
+export const getGetIndustriesUrl = () => {
+  return `/api/industries`;
+};
+
+export const getIndustries = async (
+  options?: RequestInit,
+): Promise<Industry[]> => {
+  return customFetch<Industry[]>(getGetIndustriesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetIndustriesQueryKey = () => {
+  return [`/api/industries`] as const;
+};
+
+export const getGetIndustriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getIndustries>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getIndustries>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetIndustriesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndustries>>> = ({
+    signal,
+  }) => getIndustries({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getIndustries>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetIndustriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getIndustries>>
+>;
+export type GetIndustriesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all industries (rubros)
+ */
+
+export function useGetIndustries<
+  TData = Awaited<ReturnType<typeof getIndustries>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getIndustries>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetIndustriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create an industry (admin only)
+ */
+export const getAdminCreateIndustryUrl = () => {
+  return `/api/admin/industries`;
+};
+
+export const adminCreateIndustry = async (
+  createIndustryBody: CreateIndustryBody,
+  options?: RequestInit,
+): Promise<Industry> => {
+  return customFetch<Industry>(getAdminCreateIndustryUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createIndustryBody),
+  });
+};
+
+export const getAdminCreateIndustryMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateIndustry>>,
+    TError,
+    { data: BodyType<CreateIndustryBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCreateIndustry>>,
+  TError,
+  { data: BodyType<CreateIndustryBody> },
+  TContext
+> => {
+  const mutationKey = ["adminCreateIndustry"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCreateIndustry>>,
+    { data: BodyType<CreateIndustryBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminCreateIndustry(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCreateIndustryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCreateIndustry>>
+>;
+export type AdminCreateIndustryMutationBody = BodyType<CreateIndustryBody>;
+export type AdminCreateIndustryMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Create an industry (admin only)
+ */
+export const useAdminCreateIndustry = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateIndustry>>,
+    TError,
+    { data: BodyType<CreateIndustryBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCreateIndustry>>,
+  TError,
+  { data: BodyType<CreateIndustryBody> },
+  TContext
+> => {
+  return useMutation(getAdminCreateIndustryMutationOptions(options));
+};
+
+/**
+ * @summary Update an industry (admin only)
+ */
+export const getAdminUpdateIndustryUrl = (id: number) => {
+  return `/api/admin/industries/${id}`;
+};
+
+export const adminUpdateIndustry = async (
+  id: number,
+  createIndustryBody: CreateIndustryBody,
+  options?: RequestInit,
+): Promise<Industry> => {
+  return customFetch<Industry>(getAdminUpdateIndustryUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createIndustryBody),
+  });
+};
+
+export const getAdminUpdateIndustryMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateIndustry>>,
+    TError,
+    { id: number; data: BodyType<CreateIndustryBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateIndustry>>,
+  TError,
+  { id: number; data: BodyType<CreateIndustryBody> },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateIndustry"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateIndustry>>,
+    { id: number; data: BodyType<CreateIndustryBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminUpdateIndustry(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateIndustryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateIndustry>>
+>;
+export type AdminUpdateIndustryMutationBody = BodyType<CreateIndustryBody>;
+export type AdminUpdateIndustryMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Update an industry (admin only)
+ */
+export const useAdminUpdateIndustry = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateIndustry>>,
+    TError,
+    { id: number; data: BodyType<CreateIndustryBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateIndustry>>,
+  TError,
+  { id: number; data: BodyType<CreateIndustryBody> },
+  TContext
+> => {
+  return useMutation(getAdminUpdateIndustryMutationOptions(options));
+};
+
+/**
+ * @summary Delete an industry (admin only)
+ */
+export const getAdminDeleteIndustryUrl = (id: number) => {
+  return `/api/admin/industries/${id}`;
+};
+
+export const adminDeleteIndustry = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getAdminDeleteIndustryUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getAdminDeleteIndustryMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteIndustry>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminDeleteIndustry>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["adminDeleteIndustry"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminDeleteIndustry>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminDeleteIndustry(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminDeleteIndustryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminDeleteIndustry>>
+>;
+
+export type AdminDeleteIndustryMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Delete an industry (admin only)
+ */
+export const useAdminDeleteIndustry = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteIndustry>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminDeleteIndustry>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getAdminDeleteIndustryMutationOptions(options));
+};
+
+/**
+ * @summary Check if current user already applied to a job
+ */
+export const getCheckAppliedUrl = (id: number) => {
+  return `/api/jobs/${id}/check-applied`;
+};
+
+export const checkApplied = async (
+  id: number,
+  options?: RequestInit,
+): Promise<CheckAppliedResponse> => {
+  return customFetch<CheckAppliedResponse>(getCheckAppliedUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getCheckAppliedQueryKey = (id: number) => {
+  return [`/api/jobs/${id}/check-applied`] as const;
+};
+
+export const getCheckAppliedQueryOptions = <
+  TData = Awaited<ReturnType<typeof checkApplied>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof checkApplied>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getCheckAppliedQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof checkApplied>>> = ({
+    signal,
+  }) => checkApplied(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof checkApplied>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type CheckAppliedQueryResult = NonNullable<
+  Awaited<ReturnType<typeof checkApplied>>
+>;
+export type CheckAppliedQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Check if current user already applied to a job
+ */
+
+export function useCheckApplied<
+  TData = Awaited<ReturnType<typeof checkApplied>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof checkApplied>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getCheckAppliedQueryOptions(id, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout/layout";
 import { useAuth } from "@/lib/auth";
-import { useGetMyJobs, useGetJobApplications, useUpdateApplicationStatus, useDeleteJob, getGetMyJobsQueryKey, getGetJobApplicationsQueryKey } from "@workspace/api-client-react";
+import { useGetMyJobs, useGetJobApplications, useUpdateApplicationStatus, useDeleteJob, getGetMyJobsQueryKey, getGetJobApplicationsQueryKey, useGetJob } from "@workspace/api-client-react";
 import type { JobPostingWithCompany, JobApplicationWithDetails } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,19 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
-import { Briefcase, Plus, Users, FileText, Eye, Trash2, ChevronDown, ChevronUp, MapPin, Clock, Phone, Mail, Download } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Briefcase, Plus, Users, FileText, Eye, Trash2, ChevronDown, ChevronUp, MapPin, Clock, Phone, Mail, Download, Filter, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CvViewerDialog } from "@/components/cv-viewer-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const contractLabel: Record<string, string> = { full_time: "Tiempo completo", part_time: "Medio tiempo", freelance: "Freelance", pasantia: "Pasantía" };
 const modalityLabel: Record<string, string> = { presencial: "Presencial", remoto: "Remoto", hibrido: "Híbrido" };
-const statusLabel: Record<string, string> = { pending: "Pendiente", reviewed: "Revisado", accepted: "Aceptado", rejected: "Rechazado" };
+const statusLabel: Record<string, string> = { pending: "Pendiente", visto: "Visto", rechazado: "Rechazado", finalista: "Finalista" };
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   pending: "outline",
-  reviewed: "secondary",
-  accepted: "default",
-  rejected: "destructive",
+  visto: "secondary",
+  finalista: "default",
+  rechazado: "destructive",
 };
 
 export default function MisTrabajos() {
@@ -30,14 +32,33 @@ export default function MisTrabajos() {
   const queryClient = useQueryClient();
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [applicantDialog, setApplicantDialog] = useState<JobApplicationWithDetails | null>(null);
+  const [viewingCv, setViewingCv] = useState<{ url: string; name: string } | null>(null);
+  const [filterQuestionId, setFilterQuestionId] = useState<string>("");
+  const [filterAnswer, setFilterAnswer] = useState<string>("");
 
   const { data: jobs, isLoading } = useGetMyJobs({ query: { queryKey: getGetMyJobsQueryKey(), enabled: user?.role === "company" } });
   const { data: applications, isLoading: appsLoading } = useGetJobApplications(
     selectedJobId!,
     { query: { queryKey: getGetJobApplicationsQueryKey(selectedJobId!), enabled: !!selectedJobId } }
   );
+  const { data: jobDetail } = useGetJob(selectedJobId!, { query: { enabled: !!selectedJobId } });
   const updateStatus = useUpdateApplicationStatus();
   const deleteJob = useDeleteJob();
+
+  // Questions from the selected job for filtering
+  const jobQuestions = jobDetail?.questions ?? [];
+
+  // Filter applications by question answer
+  const filteredApplications = useMemo(() => {
+    if (!applications) return [];
+    if (!filterQuestionId || !filterAnswer) return applications;
+    const qId = Number(filterQuestionId);
+    return applications.filter((app: JobApplicationWithDetails) => {
+      const answer = app.answers?.find((a) => a.questionId === qId);
+      if (!answer) return false;
+      return answer.answerText?.toLowerCase().includes(filterAnswer.toLowerCase());
+    });
+  }, [applications, filterQuestionId, filterAnswer]);
 
   if (!user || user.role !== "company") {
     return (
@@ -106,7 +127,7 @@ export default function MisTrabajos() {
                 <Card
                   key={job.id}
                   className={`cursor-pointer transition-all hover:shadow-md ${selectedJobId === job.id ? "border-primary ring-1 ring-primary" : ""}`}
-                  onClick={() => setSelectedJobId(job.id)}
+                  onClick={() => { setSelectedJobId(job.id); setFilterQuestionId(""); setFilterAnswer(""); }}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2">
@@ -159,8 +180,52 @@ export default function MisTrabajos() {
                 </Card>
               ) : (
                 <div className="space-y-3">
-                  <h2 className="text-lg font-semibold">{applications.length} postulacion{applications.length !== 1 ? "es" : ""}</h2>
-                  {applications.map((app: JobApplicationWithDetails) => (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <h2 className="text-lg font-semibold">{filteredApplications.length} postulacion{filteredApplications.length !== 1 ? "es" : ""}</h2>
+                    {jobQuestions.length > 0 && (
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Select value={filterQuestionId} onValueChange={(v) => { setFilterQuestionId(v); setFilterAnswer(""); }}>
+                          <SelectTrigger className="w-full sm:w-[200px] h-8 text-xs">
+                            <Filter className="w-3 h-3 mr-1" />
+                            <SelectValue placeholder="Filtrar por pregunta" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sin filtro</SelectItem>
+                            {jobQuestions.map((q) => (
+                              <SelectItem key={q.id} value={String(q.id)}>{q.questionText}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {filterQuestionId && filterQuestionId !== "none" && (() => {
+                          const q = jobQuestions.find(q => q.id === Number(filterQuestionId));
+                          if (q && q.questionType !== "text" && q.options) {
+                            return (
+                              <Select value={filterAnswer} onValueChange={setFilterAnswer}>
+                                <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
+                                  <SelectValue placeholder="Seleccionar respuesta" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {(q.options as string[]).map((opt) => (
+                                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            );
+                          }
+                          return (
+                            <input
+                              type="text"
+                              placeholder="Buscar en respuestas..."
+                              value={filterAnswer}
+                              onChange={(e) => setFilterAnswer(e.target.value)}
+                              className="h-8 text-xs border rounded-md px-2 w-full sm:w-[180px]"
+                            />
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                  {filteredApplications.map((app: JobApplicationWithDetails) => (
                     <Card key={app.id}>
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -194,27 +259,32 @@ export default function MisTrabajos() {
 
                         <div className="flex flex-wrap gap-2 mt-3">
                           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setApplicantDialog(app)}>
-                            <Eye className="w-3 h-3 mr-1" /> Ver detalle
+                            {app.answers?.length > 0 ? (
+                              <><MessageSquare className="w-3 h-3 mr-1" /> Ver respuestas</>
+                            ) : (
+                              <><Eye className="w-3 h-3 mr-1" /> Ver detalle</>
+                            )}
                           </Button>
                           {app.applicant.cvUrl && (
-                            <Button size="sm" variant="outline" className="h-7 text-xs" asChild>
-                              <a href={app.applicant.cvUrl.startsWith("/api") ? app.applicant.cvUrl : `/api${app.applicant.cvUrl}`} target="_blank" rel="noopener noreferrer">
-                                <Download className="w-3 h-3 mr-1" /> CV
-                              </a>
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setViewingCv({ url: app.applicant.cvUrl!, name: app.applicant.name })}>
+                              <Eye className="w-3 h-3 mr-1" /> Ver CV
                             </Button>
                           )}
                           {app.status === "pending" && (
                             <>
-                              <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleStatusChange(app.id, "reviewed")}>Marcar revisado</Button>
-                              <Button size="sm" variant="default" className="h-7 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleStatusChange(app.id, "accepted")}>Aceptar</Button>
-                              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => handleStatusChange(app.id, "rejected")}>Rechazar</Button>
+                              <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleStatusChange(app.id, "visto")}>Visto</Button>
+                              <Button size="sm" variant="default" className="h-7 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleStatusChange(app.id, "finalista")}>Finalista</Button>
+                              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => handleStatusChange(app.id, "rechazado")}>Rechazar</Button>
                             </>
                           )}
-                          {app.status === "reviewed" && (
+                          {app.status === "visto" && (
                             <>
-                              <Button size="sm" variant="default" className="h-7 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleStatusChange(app.id, "accepted")}>Aceptar</Button>
-                              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => handleStatusChange(app.id, "rejected")}>Rechazar</Button>
+                              <Button size="sm" variant="default" className="h-7 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleStatusChange(app.id, "finalista")}>Finalista</Button>
+                              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => handleStatusChange(app.id, "rechazado")}>Rechazar</Button>
                             </>
+                          )}
+                          {app.status === "finalista" && (
+                            <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => handleStatusChange(app.id, "rechazado")}>Rechazar</Button>
                           )}
                         </div>
                       </CardContent>
@@ -246,10 +316,8 @@ export default function MisTrabajos() {
                   )}
                 </div>
                 {applicantDialog.applicant.cvUrl && (
-                  <Button size="sm" variant="outline" asChild>
-                    <a href={applicantDialog.applicant.cvUrl.startsWith("/api") ? applicantDialog.applicant.cvUrl : `/api${applicantDialog.applicant.cvUrl}`} target="_blank" rel="noopener noreferrer">
-                      <Download className="w-4 h-4 mr-2" /> Descargar CV
-                    </a>
+                  <Button size="sm" variant="outline" onClick={() => { setApplicantDialog(null); setViewingCv({ url: applicantDialog.applicant.cvUrl!, name: applicantDialog.applicant.name }); }}>
+                    <Eye className="w-4 h-4 mr-2" /> Ver CV
                   </Button>
                 )}
                 {applicantDialog.coverLetter && (
@@ -276,6 +344,13 @@ export default function MisTrabajos() {
           )}
         </DialogContent>
       </Dialog>
+
+      <CvViewerDialog
+        open={!!viewingCv}
+        onOpenChange={() => setViewingCv(null)}
+        cvUrl={viewingCv?.url ?? ""}
+        userName={viewingCv?.name}
+      />
     </Layout>
   );
 }

@@ -11,7 +11,7 @@ export type JobApplicationStatus =
 
 export const JobApplicationStatus = {
   pending: "pending",
-  reviewed: "reviewed",
-  accepted: "accepted",
-  rejected: "rejected",
+  visto: "visto",
+  rechazado: "rechazado",
+  finalista: "finalista",
 } as const;

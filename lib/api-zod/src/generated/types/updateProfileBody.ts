@@ -23,4 +23,13 @@ export interface UpdateProfileBody {
   cvUrl?: string | null;
   /** @nullable */
   cvPublic?: boolean | null;
+  cvCategories?: number[] | "all" | null;
+  /** @nullable */
+  companyName?: string | null;
+  /** @nullable */
+  cuit?: string | null;
+  /** @nullable */
+  companyAddress?: string | null;
+  /** @nullable */
+  companyIndustry?: string | null;
 }

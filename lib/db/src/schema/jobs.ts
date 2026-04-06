@@ -47,7 +47,7 @@ export const jobApplicationsTable = pgTable("job_applications", {
   jobId: integer("job_id").notNull().references(() => jobPostingsTable.id, { onDelete: "cascade" }),
   applicantId: integer("applicant_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
   coverLetter: text("cover_letter"),
-  status: text("status").notNull().default("pending"), // pending | reviewed | accepted | rejected
+  status: text("status").notNull().default("pending"), // pending | visto | rechazado | finalista
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

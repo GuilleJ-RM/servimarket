@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, ilike } from "drizzle-orm";
 import { RegisterBody, LoginBody, ForgotPasswordBody, ResetPasswordBody, UpdateProfileBody } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
 import { sendEmail, buildPasswordResetEmail } from "../lib/email";
@@ -27,6 +27,7 @@ function serializeUser(user: any) {
     companyApproved: user.companyApproved,
     cvUrl: user.cvUrl,
     cvPublic: user.cvPublic,
+    cvCategories: user.cvCategories,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -38,9 +39,10 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     return;
   }
 
-  const { name, email, password, role, phone, locality } = parsed.data;
+  const { name, password, role, phone, locality } = parsed.data;
+  const email = parsed.data.email.toLowerCase();
 
-  const existing = await db.select().from(usersTable).where(eq(usersTable.email, email));
+  const existing = await db.select().from(usersTable).where(ilike(usersTable.email, email));
   if (existing.length > 0) {
     res.status(400).json({ error: "El email ya está registrado" });
     return;
@@ -84,8 +86,9 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
-  const { email, password } = parsed.data;
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+  const email = parsed.data.email.toLowerCase();
+  const { password } = parsed.data;
+  const [user] = await db.select().from(usersTable).where(ilike(usersTable.email, email));
 
   if (!user) {
     res.status(401).json({ error: "Credenciales incorrectas" });
@@ -147,6 +150,11 @@ router.patch("/auth/me", async (req, res): Promise<void> => {
   if (data.notifyEmail !== undefined && data.notifyEmail !== null) updates.notifyEmail = data.notifyEmail;
   if ((data as any).cvUrl !== undefined) updates.cvUrl = (data as any).cvUrl;
   if ((data as any).cvPublic !== undefined) updates.cvPublic = (data as any).cvPublic;
+  if ((data as any).cvCategories !== undefined) updates.cvCategories = (data as any).cvCategories;
+  if ((data as any).companyName !== undefined) updates.companyName = (data as any).companyName;
+  if ((data as any).cuit !== undefined) updates.cuit = (data as any).cuit;
+  if ((data as any).companyAddress !== undefined) updates.companyAddress = (data as any).companyAddress;
+  if ((data as any).companyIndustry !== undefined) updates.companyIndustry = (data as any).companyIndustry;
 
   if (Object.keys(updates).length === 0) {
     res.status(400).json({ error: "No hay campos para actualizar" });
@@ -166,8 +174,8 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
     return;
   }
 
-  const { email } = parsed.data;
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+  const email = parsed.data.email.toLowerCase();
+  const [user] = await db.select().from(usersTable).where(ilike(usersTable.email, email));
 
   // Always return success to prevent email enumeration
   if (!user) {

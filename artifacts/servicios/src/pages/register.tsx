@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRegister } from "@workspace/api-client-react";
+import { useRegister, useGetIndustries } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useLocation } from "wouter";
@@ -68,6 +68,7 @@ export default function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const registerMutation = useRegister();
+  const { data: industries } = useGetIndustries();
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -343,9 +344,18 @@ export default function Register() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Rubro</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Tecnología" {...field} />
-                            </FormControl>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Seleccionar rubro" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="max-h-[220px]">
+                                {industries?.map((ind) => (
+                                  <SelectItem key={ind.id} value={ind.name}>{ind.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </FormItem>
                         )}
                       />

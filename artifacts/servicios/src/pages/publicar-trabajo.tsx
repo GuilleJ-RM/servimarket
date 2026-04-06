@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout/layout";
 import { useAuth } from "@/lib/auth";
-import { useCreateJob } from "@workspace/api-client-react";
+import { useCreateJob, useGetIndustries } from "@workspace/api-client-react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -48,6 +48,7 @@ export default function PublicarTrabajo() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const createJob = useCreateJob();
+  const { data: industries } = useGetIndustries();
 
   const form = useForm<JobFormValues>({
     resolver: zodResolver(jobSchema),
@@ -205,7 +206,14 @@ export default function PublicarTrabajo() {
                   <FormField control={form.control} name="industry" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Rubro / Industria</FormLabel>
-                      <FormControl><Input placeholder="Ej: Tecnología" {...field} /></FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar rubro" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          {industries?.map((ind) => (
+                            <SelectItem key={ind.id} value={ind.name}>{ind.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormItem>
                   )} />
                 </div>
@@ -274,7 +282,6 @@ export default function PublicarTrabajo() {
                             <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>
                               <SelectItem value="text">Texto libre</SelectItem>
-                              <SelectItem value="single_choice">Opción única</SelectItem>
                               <SelectItem value="multiple_choice">Opción múltiple</SelectItem>
                             </SelectContent>
                           </Select>

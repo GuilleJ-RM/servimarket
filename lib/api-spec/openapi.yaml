@@ -19,6 +19,8 @@ tags:
     description: Service and product listings
   - name: categories
     description: Categories
+  - name: industries
+    description: Industries (rubros)
   - name: messages
     description: Internal messaging
   - name: conversations
@@ -1131,6 +1133,10 @@ paths:
           in: query
           schema:
             type: ["string", "null"]
+        - name: categoryId
+          in: query
+          schema:
+            type: ["integer", "null"]
       responses:
         "200":
           description: List of public CVs
@@ -1140,6 +1146,120 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PublicCv"
+
+  /industries:
+    get:
+      operationId: getIndustries
+      tags: [industries]
+      summary: List all industries (rubros)
+      responses:
+        "200":
+          description: List of industries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Industry"
+
+  /admin/industries:
+    post:
+      operationId: adminCreateIndustry
+      tags: [admin]
+      summary: Create an industry (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateIndustryBody"
+      responses:
+        "201":
+          description: Industry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Industry"
+        "409":
+          description: Duplicate name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/industries/{id}:
+    patch:
+      operationId: adminUpdateIndustry
+      tags: [admin]
+      summary: Update an industry (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateIndustryBody"
+      responses:
+        "200":
+          description: Updated industry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Industry"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      operationId: adminDeleteIndustry
+      tags: [admin]
+      summary: Delete an industry (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs/{id}/check-applied:
+    get:
+      operationId: checkApplied
+      tags: [jobs]
+      summary: Check if current user already applied to a job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Applied status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckAppliedResponse"
 
   /admin/companies:
     get:
@@ -1289,6 +1409,14 @@ components:
           type: ["string", "null"]
         cvPublic:
           type: boolean
+        cvCategories:
+          oneOf:
+            - type: array
+              items:
+                type: integer
+            - type: string
+              enum: ["all"]
+            - type: "null"
         createdAt:
           type: string
       required:
@@ -2179,7 +2307,7 @@ components:
           type: ["string", "null"]
         status:
           type: string
-          enum: [pending, reviewed, accepted, rejected]
+          enum: [pending, visto, rechazado, finalista]
         createdAt:
           type: string
       required:
@@ -2279,7 +2407,7 @@ components:
       properties:
         status:
           type: string
-          enum: [pending, reviewed, accepted, rejected]
+          enum: [pending, visto, rechazado, finalista]
       required:
         - status
 
@@ -2300,6 +2428,14 @@ components:
           type: ["string", "null"]
         cvUrl:
           type: ["string", "null"]
+        cvCategories:
+          oneOf:
+            - type: array
+              items:
+                type: integer
+            - type: string
+              enum: ["all"]
+            - type: "null"
         createdAt:
           type: string
       required:
@@ -2401,6 +2537,22 @@ components:
           type: ["string", "null"]
         cvPublic:
           type: ["boolean", "null"]
+        cvCategories:
+          oneOf:
+            - type: array
+              items:
+                type: integer
+            - type: string
+              enum: ["all"]
+            - type: "null"
+        companyName:
+          type: ["string", "null"]
+        cuit:
+          type: ["string", "null"]
+        companyAddress:
+          type: ["string", "null"]
+        companyIndustry:
+          type: ["string", "null"]
 
     ForgotPasswordBody:
       type: object
@@ -2423,3 +2575,30 @@ components:
         - email
         - token
         - newPassword
+
+    Industry:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+        - id
+        - name
+
+    CreateIndustryBody:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+
+    CheckAppliedResponse:
+      type: object
+      properties:
+        applied:
+          type: boolean
+      required:
+        - applied

@@ -11,12 +11,12 @@ import { ClipboardList, Briefcase, MapPin, Building2 } from "lucide-react";
 
 const contractLabel: Record<string, string> = { full_time: "Tiempo completo", part_time: "Medio tiempo", freelance: "Freelance", pasantia: "Pasantía" };
 const modalityLabel: Record<string, string> = { presencial: "Presencial", remoto: "Remoto", hibrido: "Híbrido" };
-const statusLabel: Record<string, string> = { pending: "Pendiente", reviewed: "En revisión", accepted: "Aceptado", rejected: "Rechazado" };
+const statusLabel: Record<string, string> = { pending: "Pendiente", visto: "Visto", rechazado: "Rechazado", finalista: "Finalista" };
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   pending: "outline",
-  reviewed: "secondary",
-  accepted: "default",
-  rejected: "destructive",
+  visto: "secondary",
+  finalista: "default",
+  rechazado: "destructive",
 };
 
 export default function MisPostulaciones() {

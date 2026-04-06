@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -25,6 +25,7 @@ export const usersTable = pgTable("users", {
   // CV fields (for clients)
   cvUrl: text("cv_url"),
   cvPublic: boolean("cv_public").notNull().default(false),
+  cvCategories: jsonb("cv_categories").$type<number[] | "all">(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

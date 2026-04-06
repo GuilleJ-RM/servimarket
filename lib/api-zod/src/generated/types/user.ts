@@ -33,5 +33,6 @@ export interface User {
   /** @nullable */
   cvUrl?: string | null;
   cvPublic: boolean;
+  cvCategories?: number[] | "all" | null;
   createdAt: string;
 }

@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ShoppingBag, User as UserIcon, Store } from "lucide-react";
+import { ShoppingBag, User as UserIcon, Store, Building2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -45,11 +45,21 @@ const registerSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   phone: z.string().optional(),
-  role: z.enum(["client", "provider"]),
+  role: z.enum(["client", "provider", "company"]),
   locality: z.string().optional(),
+  companyName: z.string().optional(),
+  cuit: z.string().optional(),
+  companyAddress: z.string().optional(),
+  companyIndustry: z.string().optional(),
 }).refine(
   (data) => data.role !== "provider" || (data.locality && data.locality.length > 0),
   { message: "La provincia es obligatoria para proveedores", path: ["locality"] }
+).refine(
+  (data) => data.role !== "company" || (data.companyName && data.companyName.length > 0),
+  { message: "El nombre de la empresa es obligatorio", path: ["companyName"] }
+).refine(
+  (data) => data.role !== "company" || (data.cuit && data.cuit.length > 0),
+  { message: "El CUIT es obligatorio", path: ["cuit"] }
 );
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -68,6 +78,10 @@ export default function Register() {
       phone: "",
       role: "client",
       locality: "",
+      companyName: "",
+      cuit: "",
+      companyAddress: "",
+      companyIndustry: "",
     },
   });
 
@@ -125,7 +139,7 @@ export default function Register() {
                         <RadioGroup
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          className="grid grid-cols-2 gap-4"
+                          className="grid grid-cols-3 gap-3"
                         >
                           <div>
                             <RadioGroupItem
@@ -153,8 +167,23 @@ export default function Register() {
                               className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-transparent p-4 hover:bg-muted/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
                             >
                               <Store className="mb-2 h-6 w-6" />
-                              <span className="font-semibold">Soy Profesional</span>
+                              <span className="font-semibold text-sm">Profesional</span>
                               <span className="text-xs text-muted-foreground text-center mt-1">Ofrezco servicios</span>
+                            </Label>
+                          </div>
+                          <div>
+                            <RadioGroupItem
+                              value="company"
+                              id="company"
+                              className="peer sr-only"
+                            />
+                            <Label
+                              htmlFor="company"
+                              className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-transparent p-4 hover:bg-muted/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
+                            >
+                              <Building2 className="mb-2 h-6 w-6" />
+                              <span className="font-semibold text-sm">Empresa</span>
+                              <span className="text-xs text-muted-foreground text-center mt-1">Publico vacantes</span>
                             </Label>
                           </div>
                         </RadioGroup>
@@ -242,6 +271,89 @@ export default function Register() {
                       </FormItem>
                     )}
                   />
+                )}
+
+                {selectedRole === "company" && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="companyName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre de la empresa *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Mi Empresa S.A." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="cuit"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>CUIT *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="20-12345678-9" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="companyAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dirección</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Av. Corrientes 1234, CABA" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="locality"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Provincia</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Provincia" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="max-h-[220px]">
+                                {ARGENTINA_PROVINCES.map((province) => (
+                                  <SelectItem key={province} value={province}>
+                                    {province}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="companyIndustry"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Rubro</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Tecnología" {...field} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                      Las cuentas de empresa requieren aprobación del administrador antes de poder publicar vacantes.
+                    </p>
+                  </>
                 )}
                 
                 <Button type="submit" className="w-full font-semibold" disabled={registerMutation.isPending}>

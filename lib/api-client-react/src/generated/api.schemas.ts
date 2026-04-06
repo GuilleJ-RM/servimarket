@@ -24,6 +24,7 @@ export const RegisterBodyRole = {
   provider: "provider",
   client: "client",
   admin: "admin",
+  company: "company",
 } as const;
 
 export interface RegisterBody {
@@ -35,6 +36,14 @@ export interface RegisterBody {
   phone?: string | null;
   /** @nullable */
   locality?: string | null;
+  /** @nullable */
+  companyName?: string | null;
+  /** @nullable */
+  cuit?: string | null;
+  /** @nullable */
+  companyAddress?: string | null;
+  /** @nullable */
+  companyIndustry?: string | null;
 }
 
 export interface LoginBody {
@@ -48,6 +57,7 @@ export const UserRole = {
   provider: "provider",
   client: "client",
   admin: "admin",
+  company: "company",
 } as const;
 
 export interface User {
@@ -61,6 +71,21 @@ export interface User {
   avatarUrl?: string | null;
   /** @nullable */
   locality?: string | null;
+  /** @nullable */
+  whatsapp?: string | null;
+  notifyEmail: boolean;
+  /** @nullable */
+  companyName?: string | null;
+  /** @nullable */
+  cuit?: string | null;
+  /** @nullable */
+  companyAddress?: string | null;
+  /** @nullable */
+  companyIndustry?: string | null;
+  companyApproved: boolean;
+  /** @nullable */
+  cvUrl?: string | null;
+  cvPublic: boolean;
   createdAt: string;
 }
 
@@ -130,6 +155,7 @@ export interface Listing {
   whatsapp?: string | null;
   paymentMethods: string[];
   isActive: boolean;
+  adminApproved: boolean;
   /** @nullable */
   quantity?: number | null;
   status: ListingStatus;
@@ -195,6 +221,7 @@ export interface ListingWithProvider {
   whatsapp?: string | null;
   paymentMethods: string[];
   isActive: boolean;
+  adminApproved: boolean;
   /** @nullable */
   quantity?: number | null;
   status: ListingWithProviderStatus;
@@ -574,6 +601,330 @@ export interface Review {
   createdAt: string;
 }
 
+export type JobPostingModality =
+  (typeof JobPostingModality)[keyof typeof JobPostingModality];
+
+export const JobPostingModality = {
+  presencial: "presencial",
+  remoto: "remoto",
+  hibrido: "hibrido",
+} as const;
+
+export type JobPostingContractType =
+  (typeof JobPostingContractType)[keyof typeof JobPostingContractType];
+
+export const JobPostingContractType = {
+  full_time: "full_time",
+  part_time: "part_time",
+  freelance: "freelance",
+  pasantia: "pasantia",
+} as const;
+
+export interface JobPosting {
+  id: number;
+  companyId: number;
+  title: string;
+  description: string;
+  /** @nullable */
+  industry?: string | null;
+  /** @nullable */
+  locality?: string | null;
+  modality: JobPostingModality;
+  contractType: JobPostingContractType;
+  /** @nullable */
+  salaryMin?: number | null;
+  /** @nullable */
+  salaryMax?: number | null;
+  /** @nullable */
+  requirements?: string | null;
+  /** @nullable */
+  benefits?: string | null;
+  isActive: boolean;
+  adminApproved: boolean;
+  createdAt: string;
+}
+
+export type JobQuestionQuestionType =
+  (typeof JobQuestionQuestionType)[keyof typeof JobQuestionQuestionType];
+
+export const JobQuestionQuestionType = {
+  text: "text",
+  single_choice: "single_choice",
+  multiple_choice: "multiple_choice",
+} as const;
+
+export interface JobQuestion {
+  id: number;
+  jobId: number;
+  questionText: string;
+  questionType: JobQuestionQuestionType;
+  /** @nullable */
+  options?: string[] | null;
+  required: boolean;
+  sortOrder: number;
+}
+
+export interface JobCompanySummary {
+  id: number;
+  name: string;
+  /** @nullable */
+  companyName?: string | null;
+  /** @nullable */
+  avatarUrl?: string | null;
+  /** @nullable */
+  locality?: string | null;
+  /** @nullable */
+  companyIndustry?: string | null;
+}
+
+export type JobPostingWithCompany = JobPosting & {
+  company: JobCompanySummary;
+};
+
+export type JobPostingDetail = JobPosting & {
+  company: JobCompanySummary;
+  questions: JobQuestion[];
+};
+
+export type CreateJobBodyModality =
+  (typeof CreateJobBodyModality)[keyof typeof CreateJobBodyModality];
+
+export const CreateJobBodyModality = {
+  presencial: "presencial",
+  remoto: "remoto",
+  hibrido: "hibrido",
+} as const;
+
+export type CreateJobBodyContractType =
+  (typeof CreateJobBodyContractType)[keyof typeof CreateJobBodyContractType];
+
+export const CreateJobBodyContractType = {
+  full_time: "full_time",
+  part_time: "part_time",
+  freelance: "freelance",
+  pasantia: "pasantia",
+} as const;
+
+export type CreateJobBodyQuestionsItemQuestionType =
+  (typeof CreateJobBodyQuestionsItemQuestionType)[keyof typeof CreateJobBodyQuestionsItemQuestionType];
+
+export const CreateJobBodyQuestionsItemQuestionType = {
+  text: "text",
+  single_choice: "single_choice",
+  multiple_choice: "multiple_choice",
+} as const;
+
+export type CreateJobBodyQuestionsItem = {
+  questionText: string;
+  questionType?: CreateJobBodyQuestionsItemQuestionType;
+  /** @nullable */
+  options?: string[] | null;
+  required?: boolean;
+};
+
+export interface CreateJobBody {
+  title: string;
+  description: string;
+  /** @nullable */
+  industry?: string | null;
+  /** @nullable */
+  locality?: string | null;
+  modality?: CreateJobBodyModality;
+  contractType?: CreateJobBodyContractType;
+  /** @nullable */
+  salaryMin?: number | null;
+  /** @nullable */
+  salaryMax?: number | null;
+  /** @nullable */
+  requirements?: string | null;
+  /** @nullable */
+  benefits?: string | null;
+  questions?: CreateJobBodyQuestionsItem[];
+}
+
+/**
+ * @nullable
+ */
+export type UpdateJobBodyModality =
+  | (typeof UpdateJobBodyModality)[keyof typeof UpdateJobBodyModality]
+  | null;
+
+export const UpdateJobBodyModality = {
+  presencial: "presencial",
+  remoto: "remoto",
+  hibrido: "hibrido",
+} as const;
+
+/**
+ * @nullable
+ */
+export type UpdateJobBodyContractType =
+  | (typeof UpdateJobBodyContractType)[keyof typeof UpdateJobBodyContractType]
+  | null;
+
+export const UpdateJobBodyContractType = {
+  full_time: "full_time",
+  part_time: "part_time",
+  freelance: "freelance",
+  pasantia: "pasantia",
+} as const;
+
+export type UpdateJobBodyQuestionsItemQuestionType =
+  (typeof UpdateJobBodyQuestionsItemQuestionType)[keyof typeof UpdateJobBodyQuestionsItemQuestionType];
+
+export const UpdateJobBodyQuestionsItemQuestionType = {
+  text: "text",
+  single_choice: "single_choice",
+  multiple_choice: "multiple_choice",
+} as const;
+
+export type UpdateJobBodyQuestionsItem = {
+  questionText: string;
+  questionType?: UpdateJobBodyQuestionsItemQuestionType;
+  /** @nullable */
+  options?: string[] | null;
+  required?: boolean;
+};
+
+export interface UpdateJobBody {
+  /** @nullable */
+  title?: string | null;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  industry?: string | null;
+  /** @nullable */
+  locality?: string | null;
+  /** @nullable */
+  modality?: UpdateJobBodyModality;
+  /** @nullable */
+  contractType?: UpdateJobBodyContractType;
+  /** @nullable */
+  salaryMin?: number | null;
+  /** @nullable */
+  salaryMax?: number | null;
+  /** @nullable */
+  requirements?: string | null;
+  /** @nullable */
+  benefits?: string | null;
+  /** @nullable */
+  isActive?: boolean | null;
+  /** @nullable */
+  questions?: UpdateJobBodyQuestionsItem[] | null;
+}
+
+export type JobApplicationStatus =
+  (typeof JobApplicationStatus)[keyof typeof JobApplicationStatus];
+
+export const JobApplicationStatus = {
+  pending: "pending",
+  reviewed: "reviewed",
+  accepted: "accepted",
+  rejected: "rejected",
+} as const;
+
+export interface JobApplication {
+  id: number;
+  jobId: number;
+  applicantId: number;
+  /** @nullable */
+  coverLetter?: string | null;
+  status: JobApplicationStatus;
+  createdAt: string;
+}
+
+export type ApplyJobBodyAnswersItem = {
+  questionId: number;
+  /** @nullable */
+  answerText?: string | null;
+};
+
+export interface ApplyJobBody {
+  /** @nullable */
+  coverLetter?: string | null;
+  answers?: ApplyJobBodyAnswersItem[];
+}
+
+export interface JobAnswer {
+  id: number;
+  applicationId: number;
+  questionId: number;
+  /** @nullable */
+  answerText?: string | null;
+  question?: JobQuestion;
+}
+
+export interface JobApplicantSummary {
+  id: number;
+  name: string;
+  email: string;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  avatarUrl?: string | null;
+  /** @nullable */
+  locality?: string | null;
+  /** @nullable */
+  cvUrl?: string | null;
+}
+
+export type JobApplicationWithDetails = JobApplication & {
+  applicant: JobApplicantSummary;
+  answers: JobAnswer[];
+};
+
+export type JobApplicationWithJob = JobApplication & {
+  job: JobPosting;
+  company: JobCompanySummary;
+};
+
+export type UpdateApplicationStatusBodyStatus =
+  (typeof UpdateApplicationStatusBodyStatus)[keyof typeof UpdateApplicationStatusBodyStatus];
+
+export const UpdateApplicationStatusBodyStatus = {
+  pending: "pending",
+  reviewed: "reviewed",
+  accepted: "accepted",
+  rejected: "rejected",
+} as const;
+
+export interface UpdateApplicationStatusBody {
+  status: UpdateApplicationStatusBodyStatus;
+}
+
+export interface PublicCv {
+  id: number;
+  name: string;
+  email: string;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  avatarUrl?: string | null;
+  /** @nullable */
+  locality?: string | null;
+  /** @nullable */
+  cvUrl?: string | null;
+  createdAt: string;
+}
+
+export interface CompanyAccount {
+  id: number;
+  name: string;
+  email: string;
+  /** @nullable */
+  companyName?: string | null;
+  /** @nullable */
+  cuit?: string | null;
+  /** @nullable */
+  companyAddress?: string | null;
+  /** @nullable */
+  companyIndustry?: string | null;
+  companyApproved: boolean;
+  /** @nullable */
+  locality?: string | null;
+  createdAt: string;
+}
+
 export interface ReviewWithUser {
   id: number;
   bookingId: number;
@@ -592,6 +943,35 @@ export interface CreateReviewBody {
   rating: number;
   /** @nullable */
   comment?: string | null;
+}
+
+export interface UpdateProfileBody {
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  avatarUrl?: string | null;
+  /** @nullable */
+  locality?: string | null;
+  /** @nullable */
+  whatsapp?: string | null;
+  /** @nullable */
+  notifyEmail?: boolean | null;
+  /** @nullable */
+  cvUrl?: string | null;
+  /** @nullable */
+  cvPublic?: boolean | null;
+}
+
+export interface ForgotPasswordBody {
+  email: string;
+}
+
+export interface ResetPasswordBody {
+  email: string;
+  token: string;
+  newPassword: string;
 }
 
 export type GetListingsParams = {
@@ -621,3 +1001,41 @@ export const GetListingsType = {
   service: "service",
   product: "product",
 } as const;
+
+export type AdminApproveListingBody = {
+  approved: boolean;
+};
+
+export type AdminApproveJobBody = {
+  approved: boolean;
+};
+
+export type GetJobsParams = {
+  /**
+   * @nullable
+   */
+  search?: string | null;
+  /**
+   * @nullable
+   */
+  locality?: string | null;
+  /**
+   * @nullable
+   */
+  industry?: string | null;
+};
+
+export type GetPublicCvsParams = {
+  /**
+   * @nullable
+   */
+  search?: string | null;
+  /**
+   * @nullable
+   */
+  locality?: string | null;
+};
+
+export type AdminApproveCompanyBody = {
+  approved: boolean;
+};

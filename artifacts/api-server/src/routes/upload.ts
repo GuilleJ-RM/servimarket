@@ -32,7 +32,7 @@ router.post("/upload/image", async (req, res): Promise<void> => {
   const buffer = Buffer.from(base64, "base64");
   fs.writeFileSync(filePath, buffer);
 
-  const url = `/api/uploads/${name}`;
+  const url = `/uploads/${name}`;
   res.json({ url });
 });
 

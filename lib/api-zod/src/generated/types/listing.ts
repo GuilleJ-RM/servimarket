@@ -25,6 +25,7 @@ export interface Listing {
   whatsapp?: string | null;
   paymentMethods: string[];
   isActive: boolean;
+  adminApproved: boolean;
   /** @nullable */
   quantity?: number | null;
   status: ListingStatus;

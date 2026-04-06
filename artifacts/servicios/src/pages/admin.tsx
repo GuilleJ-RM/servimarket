@@ -6,6 +6,7 @@ import {
   useAdminGetUsers,
   useAdminGetListings,
   useAdminDeleteListing,
+  useAdminApproveListing,
   useGetCategories,
   useAdminCreateCategory,
   useAdminUpdateCategory,
@@ -13,6 +14,12 @@ import {
   useAdminUpdateUser,
   useAdminDeleteUser,
   useCreateConversation,
+  useAdminGetCompanies,
+  useAdminApproveCompany,
+  useAdminGetJobs,
+  useAdminApproveJob,
+  getAdminGetListingsQueryKey,
+  getAdminGetJobsQueryKey,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +37,9 @@ import {
   MapPin,
   Phone,
   Eye,
+  Building2,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import {
   Table,
@@ -87,12 +97,19 @@ export default function Admin() {
   const { data: categories, isLoading: categoriesLoading } = useGetCategories();
 
   const deleteMutation = useAdminDeleteListing();
+  const approveListingMutation = useAdminApproveListing();
   const createCategoryMutation = useAdminCreateCategory();
   const updateCategoryMutation = useAdminUpdateCategory();
   const deleteCategoryMutation = useAdminDeleteCategory();
   const updateUserMutation = useAdminUpdateUser();
   const deleteUserMutation = useAdminDeleteUser();
   const createConversation = useCreateConversation();
+
+  const { data: companies, isLoading: companiesLoading } = useAdminGetCompanies();
+  const approveCompanyMutation = useAdminApproveCompany();
+
+  const { data: jobs, isLoading: jobsLoading } = useAdminGetJobs();
+  const approveJobMutation = useAdminApproveJob();
 
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<{ id: number; name: string; icon: string; type: string; description: string } | null>(null);
@@ -114,11 +131,41 @@ export default function Admin() {
       {
         onSuccess: () => {
           toast({ title: "Publicación eliminada", description: `"${title}" fue eliminada correctamente.` });
-          queryClient.invalidateQueries({ queryKey: ["/api/admin/listings"] });
+          queryClient.invalidateQueries({ queryKey: getAdminGetListingsQueryKey() });
           queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
         },
         onError: () => {
           toast({ title: "Error", description: "No se pudo eliminar la publicación.", variant: "destructive" });
+        },
+      }
+    );
+  };
+
+  const handleApproveListing = (id: number, approved: boolean) => {
+    approveListingMutation.mutate(
+      { id, data: { approved } },
+      {
+        onSuccess: () => {
+          toast({ title: approved ? "Publicación aprobada" : "Publicación rechazada" });
+          queryClient.invalidateQueries({ queryKey: getAdminGetListingsQueryKey() });
+        },
+        onError: () => {
+          toast({ title: "Error", variant: "destructive" });
+        },
+      }
+    );
+  };
+
+  const handleApproveJob = (id: number, approved: boolean) => {
+    approveJobMutation.mutate(
+      { id, data: { approved } },
+      {
+        onSuccess: () => {
+          toast({ title: approved ? "Vacante aprobada" : "Vacante rechazada" });
+          queryClient.invalidateQueries({ queryKey: getAdminGetJobsQueryKey() });
+        },
+        onError: () => {
+          toast({ title: "Error", variant: "destructive" });
         },
       }
     );
@@ -273,8 +320,24 @@ export default function Admin() {
       case "admin": return <Badge variant="destructive">Admin</Badge>;
       case "provider": return <Badge variant="default">Proveedor</Badge>;
       case "client": return <Badge variant="secondary">Cliente</Badge>;
+      case "company": return <Badge className="bg-purple-600">Empresa</Badge>;
       default: return <Badge variant="outline">{role}</Badge>;
     }
+  };
+
+  const handleApproveCompany = (id: number, approved: boolean) => {
+    approveCompanyMutation.mutate(
+      { id, data: { approved } },
+      {
+        onSuccess: () => {
+          toast({ title: approved ? "Empresa aprobada" : "Empresa rechazada" });
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
+        },
+        onError: () => {
+          toast({ title: "Error", variant: "destructive" });
+        },
+      }
+    );
   };
 
   return (
@@ -348,6 +411,12 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="categories" className="gap-1.5 text-xs sm:text-sm">
               <FolderOpen className="h-3.5 w-3.5" /> Categorías
+            </TabsTrigger>
+            <TabsTrigger value="companies" className="gap-1.5 text-xs sm:text-sm">
+              <Building2 className="h-3.5 w-3.5" /> Empresas
+            </TabsTrigger>
+            <TabsTrigger value="jobs" className="gap-1.5 text-xs sm:text-sm">
+              <Briefcase className="h-3.5 w-3.5" /> Vacantes
             </TabsTrigger>
           </TabsList>
 
@@ -477,6 +546,7 @@ export default function Admin() {
                             <TableHead>Proveedor</TableHead>
                             <TableHead>Categoría</TableHead>
                             <TableHead>Estado</TableHead>
+                            <TableHead>Aprobación</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -499,7 +569,21 @@ export default function Admin() {
                                 </Badge>
                               </TableCell>
                               <TableCell>
+                                <Badge variant={l.adminApproved ? "default" : "destructive"} className="text-xs">
+                                  {l.adminApproved ? "Aprobada" : "Pendiente"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
                                 <div className="flex items-center justify-end gap-1">
+                                  {!l.adminApproved ? (
+                                    <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => handleApproveListing(l.id, true)} disabled={approveListingMutation.isPending}>
+                                      <CheckCircle2 className="h-3.5 w-3.5" /> Aprobar
+                                    </Button>
+                                  ) : (
+                                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => handleApproveListing(l.id, false)} disabled={approveListingMutation.isPending}>
+                                      <XCircle className="h-3.5 w-3.5" /> Revocar
+                                    </Button>
+                                  )}
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setLocation(`/servicio/${l.id}`)} title="Ver">
                                     <Eye className="h-3.5 w-3.5" />
                                   </Button>
@@ -528,8 +612,18 @@ export default function Admin() {
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className="text-xs">{l.type === "service" ? "Servicio" : "Producto"}</Badge>
                             <Badge variant={l.isActive ? "default" : "secondary"} className="text-xs">{l.isActive ? "Activa" : "Inactiva"}</Badge>
+                            <Badge variant={l.adminApproved ? "default" : "destructive"} className="text-xs">{l.adminApproved ? "Aprobada" : "Pendiente"}</Badge>
                           </div>
                           <div className="flex gap-1 pt-1">
+                            {!l.adminApproved ? (
+                              <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleApproveListing(l.id, true)} disabled={approveListingMutation.isPending}>
+                                <CheckCircle2 className="h-3 w-3 mr-1" /> Aprobar
+                              </Button>
+                            ) : (
+                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleApproveListing(l.id, false)} disabled={approveListingMutation.isPending}>
+                                <XCircle className="h-3 w-3 mr-1" /> Revocar
+                              </Button>
+                            )}
                             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setLocation(`/servicio/${l.id}`)}>
                               <Eye className="h-3 w-3 mr-1" /> Ver
                             </Button>
@@ -636,6 +730,200 @@ export default function Admin() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* COMPANIES TAB */}
+          <TabsContent value="companies" className="mt-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Cuentas de Empresa ({companies?.length ?? 0})</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {companiesLoading ? (
+                  <p className="text-muted-foreground p-6">Cargando...</p>
+                ) : !companies?.length ? (
+                  <p className="text-muted-foreground text-center p-8">No hay empresas registradas.</p>
+                ) : (
+                  <>
+                    {/* Desktop */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12">ID</TableHead>
+                            <TableHead>Empresa</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>CUIT</TableHead>
+                            <TableHead>Rubro</TableHead>
+                            <TableHead>Estado</TableHead>
+                            <TableHead className="text-right">Acciones</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {companies.map((c: any) => (
+                            <TableRow key={c.id}>
+                              <TableCell className="text-xs text-muted-foreground">{c.id}</TableCell>
+                              <TableCell className="font-medium text-sm">
+                                <div>{c.companyName || c.name}</div>
+                                <div className="text-xs text-muted-foreground">{c.name}</div>
+                              </TableCell>
+                              <TableCell className="text-sm">{c.email}</TableCell>
+                              <TableCell className="text-sm">{c.cuit || "—"}</TableCell>
+                              <TableCell className="text-sm">{c.companyIndustry || "—"}</TableCell>
+                              <TableCell>
+                                <Badge variant={c.companyApproved ? "default" : "secondary"}>
+                                  {c.companyApproved ? "Aprobada" : "Pendiente"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center justify-end gap-1">
+                                  {!c.companyApproved ? (
+                                    <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => handleApproveCompany(c.id, true)} disabled={approveCompanyMutation.isPending}>
+                                      <CheckCircle2 className="h-3.5 w-3.5" /> Aprobar
+                                    </Button>
+                                  ) : (
+                                    <Button size="sm" variant="destructive" className="h-7 text-xs gap-1" onClick={() => handleApproveCompany(c.id, false)} disabled={approveCompanyMutation.isPending}>
+                                      <XCircle className="h-3.5 w-3.5" /> Revocar
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    {/* Mobile */}
+                    <div className="md:hidden space-y-3 p-4">
+                      {companies.map((c: any) => (
+                        <div key={c.id} className="border rounded-lg p-3 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-medium text-sm">{c.companyName || c.name}</p>
+                              <p className="text-xs text-muted-foreground">{c.email}</p>
+                              {c.cuit && <p className="text-xs text-muted-foreground">CUIT: {c.cuit}</p>}
+                            </div>
+                            <Badge variant={c.companyApproved ? "default" : "secondary"} className="text-xs">
+                              {c.companyApproved ? "Aprobada" : "Pendiente"}
+                            </Badge>
+                          </div>
+                          <div className="flex gap-1 pt-1">
+                            {!c.companyApproved ? (
+                              <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleApproveCompany(c.id, true)} disabled={approveCompanyMutation.isPending}>
+                                <CheckCircle2 className="h-3 w-3 mr-1" /> Aprobar
+                              </Button>
+                            ) : (
+                              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => handleApproveCompany(c.id, false)} disabled={approveCompanyMutation.isPending}>
+                                <XCircle className="h-3 w-3 mr-1" /> Revocar
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* JOBS TAB */}
+          <TabsContent value="jobs" className="mt-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Vacantes ({jobs?.length ?? 0})</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {jobsLoading ? (
+                  <p className="text-muted-foreground p-6">Cargando...</p>
+                ) : !jobs?.length ? (
+                  <p className="text-muted-foreground text-center p-8">No hay vacantes publicadas.</p>
+                ) : (
+                  <>
+                    {/* Desktop table */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12">ID</TableHead>
+                            <TableHead>Título</TableHead>
+                            <TableHead>Empresa</TableHead>
+                            <TableHead>Modalidad</TableHead>
+                            <TableHead>Estado</TableHead>
+                            <TableHead>Aprobación</TableHead>
+                            <TableHead className="text-right">Acciones</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {jobs.map((j: any) => (
+                            <TableRow key={j.id}>
+                              <TableCell className="text-xs text-muted-foreground">{j.id}</TableCell>
+                              <TableCell className="font-medium text-sm max-w-[200px] truncate">{j.title}</TableCell>
+                              <TableCell className="text-sm">{j.company?.companyName || j.company?.name || "—"}</TableCell>
+                              <TableCell className="text-sm capitalize">{j.modality}</TableCell>
+                              <TableCell>
+                                <Badge variant={j.isActive ? "default" : "secondary"} className="text-xs">
+                                  {j.isActive ? "Activa" : "Inactiva"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={j.adminApproved ? "default" : "destructive"} className="text-xs">
+                                  {j.adminApproved ? "Aprobada" : "Pendiente"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center justify-end gap-1">
+                                  {!j.adminApproved ? (
+                                    <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => handleApproveJob(j.id, true)} disabled={approveJobMutation.isPending}>
+                                      <CheckCircle2 className="h-3.5 w-3.5" /> Aprobar
+                                    </Button>
+                                  ) : (
+                                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => handleApproveJob(j.id, false)} disabled={approveJobMutation.isPending}>
+                                      <XCircle className="h-3.5 w-3.5" /> Revocar
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    {/* Mobile cards */}
+                    <div className="md:hidden space-y-3 p-4">
+                      {jobs.map((j: any) => (
+                        <div key={j.id} className="border rounded-lg p-3 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-medium text-sm">{j.title}</p>
+                              <p className="text-xs text-muted-foreground">{j.company?.companyName || j.company?.name}</p>
+                            </div>
+                            <Badge variant={j.adminApproved ? "default" : "destructive"} className="text-xs">
+                              {j.adminApproved ? "Aprobada" : "Pendiente"}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs capitalize">{j.modality}</Badge>
+                            <Badge variant={j.isActive ? "default" : "secondary"} className="text-xs">{j.isActive ? "Activa" : "Inactiva"}</Badge>
+                          </div>
+                          <div className="flex gap-1 pt-1">
+                            {!j.adminApproved ? (
+                              <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleApproveJob(j.id, true)} disabled={approveJobMutation.isPending}>
+                                <CheckCircle2 className="h-3 w-3 mr-1" /> Aprobar
+                              </Button>
+                            ) : (
+                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleApproveJob(j.id, false)} disabled={approveJobMutation.isPending}>
+                                <XCircle className="h-3 w-3 mr-1" /> Revocar
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -704,6 +992,7 @@ export default function Admin() {
                   <SelectContent>
                     <SelectItem value="client">Cliente</SelectItem>
                     <SelectItem value="provider">Proveedor</SelectItem>
+                    <SelectItem value="company">Empresa</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>

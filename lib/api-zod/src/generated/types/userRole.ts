@@ -12,4 +12,5 @@ export const UserRole = {
   provider: "provider",
   client: "client",
   admin: "admin",
+  company: "company",
 } as const;

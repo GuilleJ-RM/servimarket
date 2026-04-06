@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, listingsTable, categoriesTable, conversationsTable, messagesTable } from "@workspace/db";
+import { db, usersTable, listingsTable, categoriesTable, conversationsTable, messagesTable, jobPostingsTable } from "@workspace/db";
 import { eq, count, and, inArray } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { AdminCreateCategoryBody, AdminUpdateCategoryBody, AdminUpdateUserBody } from "@workspace/api-zod";
@@ -147,6 +147,7 @@ router.get("/admin/listings", requireAdmin, async (req, res): Promise<void> => {
         whatsapp: l.whatsapp,
         paymentMethods: l.paymentMethods,
         isActive: l.isActive,
+        adminApproved: l.adminApproved,
         createdAt: l.createdAt.toISOString(),
         provider: provider
           ? {
@@ -189,6 +190,76 @@ router.delete("/admin/listings/:id", requireAdmin, async (req, res): Promise<voi
   await db.delete(listingsTable).where(eq(listingsTable.id, id));
   logger.info({ listingId: id }, "Admin deleted listing");
   res.json({ success: true });
+});
+
+// PATCH /admin/listings/:id/approve - Approve or reject a listing
+router.patch("/admin/listings/:id/approve", requireAdmin, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "ID inválido" });
+    return;
+  }
+
+  const { approved } = req.body;
+  if (typeof approved !== "boolean") {
+    res.status(400).json({ error: "Campo 'approved' requerido (boolean)" });
+    return;
+  }
+
+  const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.id, id));
+  if (!listing) {
+    res.status(404).json({ error: "Publicación no encontrada" });
+    return;
+  }
+
+  await db.update(listingsTable).set({ adminApproved: approved }).where(eq(listingsTable.id, id));
+  logger.info({ listingId: id, approved }, "Admin updated listing approval");
+  res.json({ success: true, adminApproved: approved });
+});
+
+// GET /admin/jobs - List all job postings (admin only)
+router.get("/admin/jobs", requireAdmin, async (req, res): Promise<void> => {
+  const jobs = await db
+    .select()
+    .from(jobPostingsTable)
+    .innerJoin(usersTable, eq(jobPostingsTable.companyId, usersTable.id))
+    .orderBy(jobPostingsTable.createdAt);
+
+  res.json(jobs.map(row => ({
+    ...row.job_postings,
+    createdAt: row.job_postings.createdAt.toISOString(),
+    company: {
+      id: row.users.id,
+      name: row.users.name,
+      companyName: row.users.companyName,
+      email: row.users.email,
+    },
+  })));
+});
+
+// PATCH /admin/jobs/:id/approve - Approve or reject a job posting
+router.patch("/admin/jobs/:id/approve", requireAdmin, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "ID inválido" });
+    return;
+  }
+
+  const { approved } = req.body;
+  if (typeof approved !== "boolean") {
+    res.status(400).json({ error: "Campo 'approved' requerido (boolean)" });
+    return;
+  }
+
+  const [job] = await db.select().from(jobPostingsTable).where(eq(jobPostingsTable.id, id));
+  if (!job) {
+    res.status(404).json({ error: "Vacante no encontrada" });
+    return;
+  }
+
+  await db.update(jobPostingsTable).set({ adminApproved: approved }).where(eq(jobPostingsTable.id, id));
+  logger.info({ jobId: id, approved }, "Admin updated job approval");
+  res.json({ success: true, adminApproved: approved });
 });
 
 // GET /admin/stats - Platform statistics

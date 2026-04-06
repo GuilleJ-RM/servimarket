@@ -23,6 +23,10 @@ tags:
     description: Internal messaging
   - name: conversations
     description: Conversations
+  - name: jobs
+    description: Job postings and applications
+  - name: cvs
+    description: Public CVs
 
 paths:
   /healthz:
@@ -115,6 +119,74 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      operationId: updateProfile
+      tags: [auth]
+      summary: Update current user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Request a password reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordBody"
+      responses:
+        "200":
+          description: Reset email sent (always returns success)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Reset password using token from email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordBody"
+      responses:
+        "200":
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Invalid or expired token
           content:
             application/json:
               schema:
@@ -489,6 +561,81 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /admin/listings/{id}/approve:
+    patch:
+      operationId: adminApproveListing
+      tags: [admin]
+      summary: Approve or reject a listing (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                approved:
+                  type: boolean
+              required:
+                - approved
+      responses:
+        "200":
+          description: Listing approval status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/jobs:
+    get:
+      operationId: adminGetJobs
+      tags: [admin]
+      summary: Get all job postings (admin only)
+      responses:
+        "200":
+          description: List of all job postings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobPostingWithCompany"
+
+  /admin/jobs/{id}/approve:
+    patch:
+      operationId: adminApproveJob
+      tags: [admin]
+      summary: Approve or reject a job posting (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                approved:
+                  type: boolean
+              required:
+                - approved
+      responses:
+        "200":
+          description: Job approval status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
   /admin/stats:
     get:
       operationId: adminGetStats
@@ -742,6 +889,303 @@ paths:
                 items:
                   $ref: "#/components/schemas/ReviewWithUser"
 
+  # ── Jobs ──────────────────────────────────────────────────────────
+
+  /jobs:
+    get:
+      operationId: getJobs
+      tags: [jobs]
+      summary: List active job postings
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: locality
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: industry
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: List of job postings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobPostingWithCompany"
+
+    post:
+      operationId: createJob
+      tags: [jobs]
+      summary: Create a job posting (company only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobBody"
+      responses:
+        "201":
+          description: Job created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobPosting"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs/my:
+    get:
+      operationId: getMyJobs
+      tags: [jobs]
+      summary: Get company's own job postings
+      responses:
+        "200":
+          description: My jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobPosting"
+
+  /jobs/my-applications:
+    get:
+      operationId: getMyApplications
+      tags: [jobs]
+      summary: Get client's own job applications
+      responses:
+        "200":
+          description: My applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobApplicationWithJob"
+
+  /jobs/{id}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      summary: Get job posting detail with questions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobPostingDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      operationId: updateJob
+      tags: [jobs]
+      summary: Update a job posting
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateJobBody"
+      responses:
+        "200":
+          description: Updated job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobPosting"
+
+    delete:
+      operationId: deleteJob
+      tags: [jobs]
+      summary: Delete a job posting
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /jobs/{id}/apply:
+    post:
+      operationId: applyToJob
+      tags: [jobs]
+      summary: Apply to a job posting
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplyJobBody"
+      responses:
+        "201":
+          description: Application submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobApplication"
+        "400":
+          description: Already applied or error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /jobs/{id}/applications:
+    get:
+      operationId: getJobApplications
+      tags: [jobs]
+      summary: Get applications for a job (company only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobApplicationWithDetails"
+
+  /jobs/applications/{id}/status:
+    patch:
+      operationId: updateApplicationStatus
+      tags: [jobs]
+      summary: Update application status (company only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateApplicationStatusBody"
+      responses:
+        "200":
+          description: Updated application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobApplication"
+
+  /cvs/public:
+    get:
+      operationId: getPublicCvs
+      tags: [cvs]
+      summary: Get public CVs (company only)
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: locality
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: List of public CVs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicCv"
+
+  /admin/companies:
+    get:
+      operationId: adminGetCompanies
+      tags: [admin]
+      summary: Get all company accounts (admin only)
+      responses:
+        "200":
+          description: List of companies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CompanyAccount"
+
+  /admin/companies/{id}/approve:
+    patch:
+      operationId: adminApproveCompany
+      tags: [admin]
+      summary: Approve or reject a company account (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                approved:
+                  type: boolean
+              required:
+                - approved
+      responses:
+        "200":
+          description: Company status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -779,10 +1223,18 @@ components:
           type: string
         role:
           type: string
-          enum: [provider, client, admin]
+          enum: [provider, client, admin, company]
         phone:
           type: ["string", "null"]
         locality:
+          type: ["string", "null"]
+        companyName:
+          type: ["string", "null"]
+        cuit:
+          type: ["string", "null"]
+        companyAddress:
+          type: ["string", "null"]
+        companyIndustry:
           type: ["string", "null"]
       required:
         - name
@@ -812,13 +1264,31 @@ components:
           type: string
         role:
           type: string
-          enum: [provider, client, admin]
+          enum: [provider, client, admin, company]
         phone:
           type: ["string", "null"]
         avatarUrl:
           type: ["string", "null"]
         locality:
           type: ["string", "null"]
+        whatsapp:
+          type: ["string", "null"]
+        notifyEmail:
+          type: boolean
+        companyName:
+          type: ["string", "null"]
+        cuit:
+          type: ["string", "null"]
+        companyAddress:
+          type: ["string", "null"]
+        companyIndustry:
+          type: ["string", "null"]
+        companyApproved:
+          type: boolean
+        cvUrl:
+          type: ["string", "null"]
+        cvPublic:
+          type: boolean
         createdAt:
           type: string
       required:
@@ -826,6 +1296,9 @@ components:
         - name
         - email
         - role
+        - notifyEmail
+        - companyApproved
+        - cvPublic
         - createdAt
 
     AuthResponse:
@@ -887,6 +1360,8 @@ components:
             type: string
         isActive:
           type: boolean
+        adminApproved:
+          type: boolean
         quantity:
           type: ["integer", "null"]
         status:
@@ -927,6 +1402,7 @@ components:
         - price
         - paymentMethods
         - isActive
+        - adminApproved
         - status
         - pricingType
         - requiresSchedule
@@ -972,6 +1448,8 @@ components:
             type: string
         isActive:
           type: boolean
+        adminApproved:
+          type: boolean
         quantity:
           type: ["integer", "null"]
         status:
@@ -1016,6 +1494,7 @@ components:
         - price
         - paymentMethods
         - isActive
+        - adminApproved
         - status
         - pricingType
         - requiresSchedule
@@ -1474,6 +1953,391 @@ components:
         - rating
         - createdAt
 
+    # ── Job schemas ───────────────────────────────────────────────────
+
+    JobPosting:
+      type: object
+      properties:
+        id:
+          type: integer
+        companyId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        industry:
+          type: ["string", "null"]
+        locality:
+          type: ["string", "null"]
+        modality:
+          type: string
+          enum: [presencial, remoto, hibrido]
+        contractType:
+          type: string
+          enum: [full_time, part_time, freelance, pasantia]
+        salaryMin:
+          type: ["integer", "null"]
+        salaryMax:
+          type: ["integer", "null"]
+        requirements:
+          type: ["string", "null"]
+        benefits:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        adminApproved:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - companyId
+        - title
+        - description
+        - modality
+        - contractType
+        - isActive
+        - adminApproved
+        - createdAt
+
+    JobQuestion:
+      type: object
+      properties:
+        id:
+          type: integer
+        jobId:
+          type: integer
+        questionText:
+          type: string
+        questionType:
+          type: string
+          enum: [text, single_choice, multiple_choice]
+        options:
+          type: ["array", "null"]
+          items:
+            type: string
+        required:
+          type: boolean
+        sortOrder:
+          type: integer
+      required:
+        - id
+        - jobId
+        - questionText
+        - questionType
+        - required
+        - sortOrder
+
+    JobCompanySummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        companyName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        locality:
+          type: ["string", "null"]
+        companyIndustry:
+          type: ["string", "null"]
+      required:
+        - id
+        - name
+
+    JobPostingWithCompany:
+      allOf:
+        - $ref: "#/components/schemas/JobPosting"
+        - type: object
+          properties:
+            company:
+              $ref: "#/components/schemas/JobCompanySummary"
+          required:
+            - company
+
+    JobPostingDetail:
+      allOf:
+        - $ref: "#/components/schemas/JobPosting"
+        - type: object
+          properties:
+            company:
+              $ref: "#/components/schemas/JobCompanySummary"
+            questions:
+              type: array
+              items:
+                $ref: "#/components/schemas/JobQuestion"
+          required:
+            - company
+            - questions
+
+    CreateJobBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        industry:
+          type: ["string", "null"]
+        locality:
+          type: ["string", "null"]
+        modality:
+          type: string
+          enum: [presencial, remoto, hibrido]
+        contractType:
+          type: string
+          enum: [full_time, part_time, freelance, pasantia]
+        salaryMin:
+          type: ["integer", "null"]
+        salaryMax:
+          type: ["integer", "null"]
+        requirements:
+          type: ["string", "null"]
+        benefits:
+          type: ["string", "null"]
+        questions:
+          type: array
+          items:
+            type: object
+            properties:
+              questionText:
+                type: string
+              questionType:
+                type: string
+                enum: [text, single_choice, multiple_choice]
+              options:
+                type: ["array", "null"]
+                items:
+                  type: string
+              required:
+                type: boolean
+            required:
+              - questionText
+      required:
+        - title
+        - description
+
+    UpdateJobBody:
+      type: object
+      properties:
+        title:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        industry:
+          type: ["string", "null"]
+        locality:
+          type: ["string", "null"]
+        modality:
+          type: ["string", "null"]
+          enum: [presencial, remoto, hibrido, null]
+        contractType:
+          type: ["string", "null"]
+          enum: [full_time, part_time, freelance, pasantia, null]
+        salaryMin:
+          type: ["integer", "null"]
+        salaryMax:
+          type: ["integer", "null"]
+        requirements:
+          type: ["string", "null"]
+        benefits:
+          type: ["string", "null"]
+        isActive:
+          type: ["boolean", "null"]
+        questions:
+          type: ["array", "null"]
+          items:
+            type: object
+            properties:
+              questionText:
+                type: string
+              questionType:
+                type: string
+                enum: [text, single_choice, multiple_choice]
+              options:
+                type: ["array", "null"]
+                items:
+                  type: string
+              required:
+                type: boolean
+            required:
+              - questionText
+
+    JobApplication:
+      type: object
+      properties:
+        id:
+          type: integer
+        jobId:
+          type: integer
+        applicantId:
+          type: integer
+        coverLetter:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, reviewed, accepted, rejected]
+        createdAt:
+          type: string
+      required:
+        - id
+        - jobId
+        - applicantId
+        - status
+        - createdAt
+
+    ApplyJobBody:
+      type: object
+      properties:
+        coverLetter:
+          type: ["string", "null"]
+        answers:
+          type: array
+          items:
+            type: object
+            properties:
+              questionId:
+                type: integer
+              answerText:
+                type: ["string", "null"]
+            required:
+              - questionId
+
+    JobAnswer:
+      type: object
+      properties:
+        id:
+          type: integer
+        applicationId:
+          type: integer
+        questionId:
+          type: integer
+        answerText:
+          type: ["string", "null"]
+        question:
+          $ref: "#/components/schemas/JobQuestion"
+      required:
+        - id
+        - applicationId
+        - questionId
+
+    JobApplicantSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        locality:
+          type: ["string", "null"]
+        cvUrl:
+          type: ["string", "null"]
+      required:
+        - id
+        - name
+        - email
+
+    JobApplicationWithDetails:
+      allOf:
+        - $ref: "#/components/schemas/JobApplication"
+        - type: object
+          properties:
+            applicant:
+              $ref: "#/components/schemas/JobApplicantSummary"
+            answers:
+              type: array
+              items:
+                $ref: "#/components/schemas/JobAnswer"
+          required:
+            - applicant
+            - answers
+
+    JobApplicationWithJob:
+      allOf:
+        - $ref: "#/components/schemas/JobApplication"
+        - type: object
+          properties:
+            job:
+              $ref: "#/components/schemas/JobPosting"
+            company:
+              $ref: "#/components/schemas/JobCompanySummary"
+          required:
+            - job
+            - company
+
+    UpdateApplicationStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, reviewed, accepted, rejected]
+      required:
+        - status
+
+    PublicCv:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        locality:
+          type: ["string", "null"]
+        cvUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - createdAt
+
+    CompanyAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        companyName:
+          type: ["string", "null"]
+        cuit:
+          type: ["string", "null"]
+        companyAddress:
+          type: ["string", "null"]
+        companyIndustry:
+          type: ["string", "null"]
+        companyApproved:
+          type: boolean
+        locality:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - companyApproved
+        - createdAt
+
     ReviewWithUser:
       type: object
       properties:
@@ -1517,3 +2381,45 @@ components:
       required:
         - bookingId
         - rating
+
+    UpdateProfileBody:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        locality:
+          type: ["string", "null"]
+        whatsapp:
+          type: ["string", "null"]
+        notifyEmail:
+          type: ["boolean", "null"]
+        cvUrl:
+          type: ["string", "null"]
+        cvPublic:
+          type: ["boolean", "null"]
+
+    ForgotPasswordBody:
+      type: object
+      properties:
+        email:
+          type: string
+      required:
+        - email
+
+    ResetPasswordBody:
+      type: object
+      properties:
+        email:
+          type: string
+        token:
+          type: string
+        newPassword:
+          type: string
+      required:
+        - email
+        - token
+        - newPassword

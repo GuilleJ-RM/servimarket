@@ -21,9 +21,13 @@ export const RegisterBody = zod.object({
   name: zod.string(),
   email: zod.string(),
   password: zod.string(),
-  role: zod.enum(["provider", "client", "admin"]),
+  role: zod.enum(["provider", "client", "admin", "company"]),
   phone: zod.string().nullish(),
   locality: zod.string().nullish(),
+  companyName: zod.string().nullish(),
+  cuit: zod.string().nullish(),
+  companyAddress: zod.string().nullish(),
+  companyIndustry: zod.string().nullish(),
 });
 
 /**
@@ -39,10 +43,19 @@ export const LoginResponse = zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client", "admin"]),
+    role: zod.enum(["provider", "client", "admin", "company"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
     locality: zod.string().nullish(),
+    whatsapp: zod.string().nullish(),
+    notifyEmail: zod.boolean(),
+    companyName: zod.string().nullish(),
+    cuit: zod.string().nullish(),
+    companyAddress: zod.string().nullish(),
+    companyIndustry: zod.string().nullish(),
+    companyApproved: zod.boolean(),
+    cvUrl: zod.string().nullish(),
+    cvPublic: zod.boolean(),
     createdAt: zod.string(),
   }),
 });
@@ -61,11 +74,78 @@ export const GetMeResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["provider", "client", "admin"]),
+  role: zod.enum(["provider", "client", "admin", "company"]),
   phone: zod.string().nullish(),
   avatarUrl: zod.string().nullish(),
   locality: zod.string().nullish(),
+  whatsapp: zod.string().nullish(),
+  notifyEmail: zod.boolean(),
+  companyName: zod.string().nullish(),
+  cuit: zod.string().nullish(),
+  companyAddress: zod.string().nullish(),
+  companyIndustry: zod.string().nullish(),
+  companyApproved: zod.boolean(),
+  cvUrl: zod.string().nullish(),
+  cvPublic: zod.boolean(),
   createdAt: zod.string(),
+});
+
+/**
+ * @summary Update current user's profile
+ */
+export const UpdateProfileBody = zod.object({
+  name: zod.string().nullish(),
+  phone: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  locality: zod.string().nullish(),
+  whatsapp: zod.string().nullish(),
+  notifyEmail: zod.boolean().nullish(),
+  cvUrl: zod.string().nullish(),
+  cvPublic: zod.boolean().nullish(),
+});
+
+export const UpdateProfileResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.enum(["provider", "client", "admin", "company"]),
+  phone: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  locality: zod.string().nullish(),
+  whatsapp: zod.string().nullish(),
+  notifyEmail: zod.boolean(),
+  companyName: zod.string().nullish(),
+  cuit: zod.string().nullish(),
+  companyAddress: zod.string().nullish(),
+  companyIndustry: zod.string().nullish(),
+  companyApproved: zod.boolean(),
+  cvUrl: zod.string().nullish(),
+  cvPublic: zod.boolean(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Request a password reset email
+ */
+export const ForgotPasswordBody = zod.object({
+  email: zod.string(),
+});
+
+export const ForgotPasswordResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Reset password using token from email
+ */
+export const ResetPasswordBody = zod.object({
+  email: zod.string(),
+  token: zod.string(),
+  newPassword: zod.string(),
+});
+
+export const ResetPasswordResponse = zod.object({
+  success: zod.boolean(),
 });
 
 /**
@@ -105,6 +185,7 @@ export const GetListingsResponseItem = zod.object({
   whatsapp: zod.string().nullish(),
   paymentMethods: zod.array(zod.string()),
   isActive: zod.boolean(),
+  adminApproved: zod.boolean(),
   quantity: zod.number().nullish(),
   status: zod.enum(["active", "sold", "paused"]),
   pricingType: zod.enum(["unit", "per_kilo"]),
@@ -125,10 +206,19 @@ export const GetListingsResponseItem = zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client", "admin"]),
+    role: zod.enum(["provider", "client", "admin", "company"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
     locality: zod.string().nullish(),
+    whatsapp: zod.string().nullish(),
+    notifyEmail: zod.boolean(),
+    companyName: zod.string().nullish(),
+    cuit: zod.string().nullish(),
+    companyAddress: zod.string().nullish(),
+    companyIndustry: zod.string().nullish(),
+    companyApproved: zod.boolean(),
+    cvUrl: zod.string().nullish(),
+    cvPublic: zod.boolean(),
     createdAt: zod.string(),
   }),
   category: zod.object({
@@ -190,6 +280,7 @@ export const GetListingResponse = zod.object({
   whatsapp: zod.string().nullish(),
   paymentMethods: zod.array(zod.string()),
   isActive: zod.boolean(),
+  adminApproved: zod.boolean(),
   quantity: zod.number().nullish(),
   status: zod.enum(["active", "sold", "paused"]),
   pricingType: zod.enum(["unit", "per_kilo"]),
@@ -210,10 +301,19 @@ export const GetListingResponse = zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client", "admin"]),
+    role: zod.enum(["provider", "client", "admin", "company"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
     locality: zod.string().nullish(),
+    whatsapp: zod.string().nullish(),
+    notifyEmail: zod.boolean(),
+    companyName: zod.string().nullish(),
+    cuit: zod.string().nullish(),
+    companyAddress: zod.string().nullish(),
+    companyIndustry: zod.string().nullish(),
+    companyApproved: zod.boolean(),
+    cvUrl: zod.string().nullish(),
+    cvPublic: zod.boolean(),
     createdAt: zod.string(),
   }),
   category: zod.object({
@@ -284,6 +384,7 @@ export const UpdateListingResponse = zod.object({
   whatsapp: zod.string().nullish(),
   paymentMethods: zod.array(zod.string()),
   isActive: zod.boolean(),
+  adminApproved: zod.boolean(),
   quantity: zod.number().nullish(),
   status: zod.enum(["active", "sold", "paused"]),
   pricingType: zod.enum(["unit", "per_kilo"]),
@@ -330,6 +431,7 @@ export const GetMyListingsResponseItem = zod
     whatsapp: zod.string().nullish(),
     paymentMethods: zod.array(zod.string()),
     isActive: zod.boolean(),
+    adminApproved: zod.boolean(),
     quantity: zod.number().nullish(),
     status: zod.enum(["active", "sold", "paused"]),
     pricingType: zod.enum(["unit", "per_kilo"]),
@@ -387,6 +489,7 @@ export const GetFeaturedListingsResponseItem = zod.object({
       whatsapp: zod.string().nullish(),
       paymentMethods: zod.array(zod.string()),
       isActive: zod.boolean(),
+      adminApproved: zod.boolean(),
       quantity: zod.number().nullish(),
       status: zod.enum(["active", "sold", "paused"]),
       pricingType: zod.enum(["unit", "per_kilo"]),
@@ -407,10 +510,19 @@ export const GetFeaturedListingsResponseItem = zod.object({
         id: zod.number(),
         name: zod.string(),
         email: zod.string(),
-        role: zod.enum(["provider", "client", "admin"]),
+        role: zod.enum(["provider", "client", "admin", "company"]),
         phone: zod.string().nullish(),
         avatarUrl: zod.string().nullish(),
         locality: zod.string().nullish(),
+        whatsapp: zod.string().nullish(),
+        notifyEmail: zod.boolean(),
+        companyName: zod.string().nullish(),
+        cuit: zod.string().nullish(),
+        companyAddress: zod.string().nullish(),
+        companyIndustry: zod.string().nullish(),
+        companyApproved: zod.boolean(),
+        cvUrl: zod.string().nullish(),
+        cvPublic: zod.boolean(),
         createdAt: zod.string(),
       }),
       category: zod.object({
@@ -440,20 +552,38 @@ export const GetConversationsResponseItem = zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client", "admin"]),
+    role: zod.enum(["provider", "client", "admin", "company"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
     locality: zod.string().nullish(),
+    whatsapp: zod.string().nullish(),
+    notifyEmail: zod.boolean(),
+    companyName: zod.string().nullish(),
+    cuit: zod.string().nullish(),
+    companyAddress: zod.string().nullish(),
+    companyIndustry: zod.string().nullish(),
+    companyApproved: zod.boolean(),
+    cvUrl: zod.string().nullish(),
+    cvPublic: zod.boolean(),
     createdAt: zod.string(),
   }),
   provider: zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client", "admin"]),
+    role: zod.enum(["provider", "client", "admin", "company"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
     locality: zod.string().nullish(),
+    whatsapp: zod.string().nullish(),
+    notifyEmail: zod.boolean(),
+    companyName: zod.string().nullish(),
+    cuit: zod.string().nullish(),
+    companyAddress: zod.string().nullish(),
+    companyIndustry: zod.string().nullish(),
+    companyApproved: zod.boolean(),
+    cvUrl: zod.string().nullish(),
+    cvPublic: zod.boolean(),
     createdAt: zod.string(),
   }),
   listing: zod
@@ -470,6 +600,7 @@ export const GetConversationsResponseItem = zod.object({
       whatsapp: zod.string().nullish(),
       paymentMethods: zod.array(zod.string()),
       isActive: zod.boolean(),
+      adminApproved: zod.boolean(),
       quantity: zod.number().nullish(),
       status: zod.enum(["active", "sold", "paused"]),
       pricingType: zod.enum(["unit", "per_kilo"]),
@@ -490,10 +621,19 @@ export const GetConversationsResponseItem = zod.object({
         id: zod.number(),
         name: zod.string(),
         email: zod.string(),
-        role: zod.enum(["provider", "client", "admin"]),
+        role: zod.enum(["provider", "client", "admin", "company"]),
         phone: zod.string().nullish(),
         avatarUrl: zod.string().nullish(),
         locality: zod.string().nullish(),
+        whatsapp: zod.string().nullish(),
+        notifyEmail: zod.boolean(),
+        companyName: zod.string().nullish(),
+        cuit: zod.string().nullish(),
+        companyAddress: zod.string().nullish(),
+        companyIndustry: zod.string().nullish(),
+        companyApproved: zod.boolean(),
+        cvUrl: zod.string().nullish(),
+        cvPublic: zod.boolean(),
         createdAt: zod.string(),
       }),
       category: zod.object({
@@ -517,10 +657,19 @@ export const GetConversationsResponseItem = zod.object({
         id: zod.number(),
         name: zod.string(),
         email: zod.string(),
-        role: zod.enum(["provider", "client", "admin"]),
+        role: zod.enum(["provider", "client", "admin", "company"]),
         phone: zod.string().nullish(),
         avatarUrl: zod.string().nullish(),
         locality: zod.string().nullish(),
+        whatsapp: zod.string().nullish(),
+        notifyEmail: zod.boolean(),
+        companyName: zod.string().nullish(),
+        cuit: zod.string().nullish(),
+        companyAddress: zod.string().nullish(),
+        companyIndustry: zod.string().nullish(),
+        companyApproved: zod.boolean(),
+        cvUrl: zod.string().nullish(),
+        cvPublic: zod.boolean(),
         createdAt: zod.string(),
       }),
     })
@@ -555,10 +704,19 @@ export const GetMessagesResponseItem = zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client", "admin"]),
+    role: zod.enum(["provider", "client", "admin", "company"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
     locality: zod.string().nullish(),
+    whatsapp: zod.string().nullish(),
+    notifyEmail: zod.boolean(),
+    companyName: zod.string().nullish(),
+    cuit: zod.string().nullish(),
+    companyAddress: zod.string().nullish(),
+    companyIndustry: zod.string().nullish(),
+    companyApproved: zod.boolean(),
+    cvUrl: zod.string().nullish(),
+    cvPublic: zod.boolean(),
     createdAt: zod.string(),
   }),
 });
@@ -594,10 +752,19 @@ export const AdminGetUsersResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["provider", "client", "admin"]),
+  role: zod.enum(["provider", "client", "admin", "company"]),
   phone: zod.string().nullish(),
   avatarUrl: zod.string().nullish(),
   locality: zod.string().nullish(),
+  whatsapp: zod.string().nullish(),
+  notifyEmail: zod.boolean(),
+  companyName: zod.string().nullish(),
+  cuit: zod.string().nullish(),
+  companyAddress: zod.string().nullish(),
+  companyIndustry: zod.string().nullish(),
+  companyApproved: zod.boolean(),
+  cvUrl: zod.string().nullish(),
+  cvPublic: zod.boolean(),
   createdAt: zod.string(),
 });
 export const AdminGetUsersResponse = zod.array(AdminGetUsersResponseItem);
@@ -629,10 +796,19 @@ export const AdminUpdateUserResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["provider", "client", "admin"]),
+  role: zod.enum(["provider", "client", "admin", "company"]),
   phone: zod.string().nullish(),
   avatarUrl: zod.string().nullish(),
   locality: zod.string().nullish(),
+  whatsapp: zod.string().nullish(),
+  notifyEmail: zod.boolean(),
+  companyName: zod.string().nullish(),
+  cuit: zod.string().nullish(),
+  companyAddress: zod.string().nullish(),
+  companyIndustry: zod.string().nullish(),
+  companyApproved: zod.boolean(),
+  cvUrl: zod.string().nullish(),
+  cvPublic: zod.boolean(),
   createdAt: zod.string(),
 });
 
@@ -663,6 +839,7 @@ export const AdminGetListingsResponseItem = zod.object({
   whatsapp: zod.string().nullish(),
   paymentMethods: zod.array(zod.string()),
   isActive: zod.boolean(),
+  adminApproved: zod.boolean(),
   quantity: zod.number().nullish(),
   status: zod.enum(["active", "sold", "paused"]),
   pricingType: zod.enum(["unit", "per_kilo"]),
@@ -683,10 +860,19 @@ export const AdminGetListingsResponseItem = zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client", "admin"]),
+    role: zod.enum(["provider", "client", "admin", "company"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
     locality: zod.string().nullish(),
+    whatsapp: zod.string().nullish(),
+    notifyEmail: zod.boolean(),
+    companyName: zod.string().nullish(),
+    cuit: zod.string().nullish(),
+    companyAddress: zod.string().nullish(),
+    companyIndustry: zod.string().nullish(),
+    companyApproved: zod.boolean(),
+    cvUrl: zod.string().nullish(),
+    cvPublic: zod.boolean(),
     createdAt: zod.string(),
   }),
   category: zod.object({
@@ -707,6 +893,71 @@ export const AdminDeleteListingParams = zod.object({
 });
 
 export const AdminDeleteListingResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Approve or reject a listing (admin only)
+ */
+export const AdminApproveListingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminApproveListingBody = zod.object({
+  approved: zod.boolean(),
+});
+
+export const AdminApproveListingResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Get all job postings (admin only)
+ */
+export const AdminGetJobsResponseItem = zod
+  .object({
+    id: zod.number(),
+    companyId: zod.number(),
+    title: zod.string(),
+    description: zod.string(),
+    industry: zod.string().nullish(),
+    locality: zod.string().nullish(),
+    modality: zod.enum(["presencial", "remoto", "hibrido"]),
+    contractType: zod.enum(["full_time", "part_time", "freelance", "pasantia"]),
+    salaryMin: zod.number().nullish(),
+    salaryMax: zod.number().nullish(),
+    requirements: zod.string().nullish(),
+    benefits: zod.string().nullish(),
+    isActive: zod.boolean(),
+    adminApproved: zod.boolean(),
+    createdAt: zod.string(),
+  })
+  .and(
+    zod.object({
+      company: zod.object({
+        id: zod.number(),
+        name: zod.string(),
+        companyName: zod.string().nullish(),
+        avatarUrl: zod.string().nullish(),
+        locality: zod.string().nullish(),
+        companyIndustry: zod.string().nullish(),
+      }),
+    }),
+  );
+export const AdminGetJobsResponse = zod.array(AdminGetJobsResponseItem);
+
+/**
+ * @summary Approve or reject a job posting (admin only)
+ */
+export const AdminApproveJobParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminApproveJobBody = zod.object({
+  approved: zod.boolean(),
+});
+
+export const AdminApproveJobResponse = zod.object({
   success: zod.boolean(),
 });
 
@@ -813,6 +1064,7 @@ export const GetMyBookingsResponseItem = zod.object({
     whatsapp: zod.string().nullish(),
     paymentMethods: zod.array(zod.string()),
     isActive: zod.boolean(),
+    adminApproved: zod.boolean(),
     quantity: zod.number().nullish(),
     status: zod.enum(["active", "sold", "paused"]),
     pricingType: zod.enum(["unit", "per_kilo"]),
@@ -834,20 +1086,38 @@ export const GetMyBookingsResponseItem = zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client", "admin"]),
+    role: zod.enum(["provider", "client", "admin", "company"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
     locality: zod.string().nullish(),
+    whatsapp: zod.string().nullish(),
+    notifyEmail: zod.boolean(),
+    companyName: zod.string().nullish(),
+    cuit: zod.string().nullish(),
+    companyAddress: zod.string().nullish(),
+    companyIndustry: zod.string().nullish(),
+    companyApproved: zod.boolean(),
+    cvUrl: zod.string().nullish(),
+    cvPublic: zod.boolean(),
     createdAt: zod.string(),
   }),
   provider: zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client", "admin"]),
+    role: zod.enum(["provider", "client", "admin", "company"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
     locality: zod.string().nullish(),
+    whatsapp: zod.string().nullish(),
+    notifyEmail: zod.boolean(),
+    companyName: zod.string().nullish(),
+    cuit: zod.string().nullish(),
+    companyAddress: zod.string().nullish(),
+    companyIndustry: zod.string().nullish(),
+    companyApproved: zod.boolean(),
+    cvUrl: zod.string().nullish(),
+    cvPublic: zod.boolean(),
     createdAt: zod.string(),
   }),
 });
@@ -961,13 +1231,440 @@ export const GetListingReviewsResponseItem = zod.object({
     id: zod.number(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["provider", "client", "admin"]),
+    role: zod.enum(["provider", "client", "admin", "company"]),
     phone: zod.string().nullish(),
     avatarUrl: zod.string().nullish(),
     locality: zod.string().nullish(),
+    whatsapp: zod.string().nullish(),
+    notifyEmail: zod.boolean(),
+    companyName: zod.string().nullish(),
+    cuit: zod.string().nullish(),
+    companyAddress: zod.string().nullish(),
+    companyIndustry: zod.string().nullish(),
+    companyApproved: zod.boolean(),
+    cvUrl: zod.string().nullish(),
+    cvPublic: zod.boolean(),
     createdAt: zod.string(),
   }),
 });
 export const GetListingReviewsResponse = zod.array(
   GetListingReviewsResponseItem,
 );
+
+/**
+ * @summary List active job postings
+ */
+export const GetJobsQueryParams = zod.object({
+  search: zod.coerce.string().nullish(),
+  locality: zod.coerce.string().nullish(),
+  industry: zod.coerce.string().nullish(),
+});
+
+export const GetJobsResponseItem = zod
+  .object({
+    id: zod.number(),
+    companyId: zod.number(),
+    title: zod.string(),
+    description: zod.string(),
+    industry: zod.string().nullish(),
+    locality: zod.string().nullish(),
+    modality: zod.enum(["presencial", "remoto", "hibrido"]),
+    contractType: zod.enum(["full_time", "part_time", "freelance", "pasantia"]),
+    salaryMin: zod.number().nullish(),
+    salaryMax: zod.number().nullish(),
+    requirements: zod.string().nullish(),
+    benefits: zod.string().nullish(),
+    isActive: zod.boolean(),
+    adminApproved: zod.boolean(),
+    createdAt: zod.string(),
+  })
+  .and(
+    zod.object({
+      company: zod.object({
+        id: zod.number(),
+        name: zod.string(),
+        companyName: zod.string().nullish(),
+        avatarUrl: zod.string().nullish(),
+        locality: zod.string().nullish(),
+        companyIndustry: zod.string().nullish(),
+      }),
+    }),
+  );
+export const GetJobsResponse = zod.array(GetJobsResponseItem);
+
+/**
+ * @summary Create a job posting (company only)
+ */
+export const CreateJobBody = zod.object({
+  title: zod.string(),
+  description: zod.string(),
+  industry: zod.string().nullish(),
+  locality: zod.string().nullish(),
+  modality: zod.enum(["presencial", "remoto", "hibrido"]).optional(),
+  contractType: zod
+    .enum(["full_time", "part_time", "freelance", "pasantia"])
+    .optional(),
+  salaryMin: zod.number().nullish(),
+  salaryMax: zod.number().nullish(),
+  requirements: zod.string().nullish(),
+  benefits: zod.string().nullish(),
+  questions: zod
+    .array(
+      zod.object({
+        questionText: zod.string(),
+        questionType: zod
+          .enum(["text", "single_choice", "multiple_choice"])
+          .optional(),
+        options: zod.array(zod.string()).nullish(),
+        required: zod.boolean().optional(),
+      }),
+    )
+    .optional(),
+});
+
+/**
+ * @summary Get company's own job postings
+ */
+export const GetMyJobsResponseItem = zod.object({
+  id: zod.number(),
+  companyId: zod.number(),
+  title: zod.string(),
+  description: zod.string(),
+  industry: zod.string().nullish(),
+  locality: zod.string().nullish(),
+  modality: zod.enum(["presencial", "remoto", "hibrido"]),
+  contractType: zod.enum(["full_time", "part_time", "freelance", "pasantia"]),
+  salaryMin: zod.number().nullish(),
+  salaryMax: zod.number().nullish(),
+  requirements: zod.string().nullish(),
+  benefits: zod.string().nullish(),
+  isActive: zod.boolean(),
+  adminApproved: zod.boolean(),
+  createdAt: zod.string(),
+});
+export const GetMyJobsResponse = zod.array(GetMyJobsResponseItem);
+
+/**
+ * @summary Get client's own job applications
+ */
+export const GetMyApplicationsResponseItem = zod
+  .object({
+    id: zod.number(),
+    jobId: zod.number(),
+    applicantId: zod.number(),
+    coverLetter: zod.string().nullish(),
+    status: zod.enum(["pending", "reviewed", "accepted", "rejected"]),
+    createdAt: zod.string(),
+  })
+  .and(
+    zod.object({
+      job: zod.object({
+        id: zod.number(),
+        companyId: zod.number(),
+        title: zod.string(),
+        description: zod.string(),
+        industry: zod.string().nullish(),
+        locality: zod.string().nullish(),
+        modality: zod.enum(["presencial", "remoto", "hibrido"]),
+        contractType: zod.enum([
+          "full_time",
+          "part_time",
+          "freelance",
+          "pasantia",
+        ]),
+        salaryMin: zod.number().nullish(),
+        salaryMax: zod.number().nullish(),
+        requirements: zod.string().nullish(),
+        benefits: zod.string().nullish(),
+        isActive: zod.boolean(),
+        adminApproved: zod.boolean(),
+        createdAt: zod.string(),
+      }),
+      company: zod.object({
+        id: zod.number(),
+        name: zod.string(),
+        companyName: zod.string().nullish(),
+        avatarUrl: zod.string().nullish(),
+        locality: zod.string().nullish(),
+        companyIndustry: zod.string().nullish(),
+      }),
+    }),
+  );
+export const GetMyApplicationsResponse = zod.array(
+  GetMyApplicationsResponseItem,
+);
+
+/**
+ * @summary Get job posting detail with questions
+ */
+export const GetJobParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetJobResponse = zod
+  .object({
+    id: zod.number(),
+    companyId: zod.number(),
+    title: zod.string(),
+    description: zod.string(),
+    industry: zod.string().nullish(),
+    locality: zod.string().nullish(),
+    modality: zod.enum(["presencial", "remoto", "hibrido"]),
+    contractType: zod.enum(["full_time", "part_time", "freelance", "pasantia"]),
+    salaryMin: zod.number().nullish(),
+    salaryMax: zod.number().nullish(),
+    requirements: zod.string().nullish(),
+    benefits: zod.string().nullish(),
+    isActive: zod.boolean(),
+    adminApproved: zod.boolean(),
+    createdAt: zod.string(),
+  })
+  .and(
+    zod.object({
+      company: zod.object({
+        id: zod.number(),
+        name: zod.string(),
+        companyName: zod.string().nullish(),
+        avatarUrl: zod.string().nullish(),
+        locality: zod.string().nullish(),
+        companyIndustry: zod.string().nullish(),
+      }),
+      questions: zod.array(
+        zod.object({
+          id: zod.number(),
+          jobId: zod.number(),
+          questionText: zod.string(),
+          questionType: zod.enum(["text", "single_choice", "multiple_choice"]),
+          options: zod.array(zod.string()).nullish(),
+          required: zod.boolean(),
+          sortOrder: zod.number(),
+        }),
+      ),
+    }),
+  );
+
+/**
+ * @summary Update a job posting
+ */
+export const UpdateJobParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateJobBody = zod.object({
+  title: zod.string().nullish(),
+  description: zod.string().nullish(),
+  industry: zod.string().nullish(),
+  locality: zod.string().nullish(),
+  modality: zod
+    .union([
+      zod.literal("presencial"),
+      zod.literal("remoto"),
+      zod.literal("hibrido"),
+      zod.literal(null),
+    ])
+    .nullish(),
+  contractType: zod
+    .union([
+      zod.literal("full_time"),
+      zod.literal("part_time"),
+      zod.literal("freelance"),
+      zod.literal("pasantia"),
+      zod.literal(null),
+    ])
+    .nullish(),
+  salaryMin: zod.number().nullish(),
+  salaryMax: zod.number().nullish(),
+  requirements: zod.string().nullish(),
+  benefits: zod.string().nullish(),
+  isActive: zod.boolean().nullish(),
+  questions: zod
+    .array(
+      zod.object({
+        questionText: zod.string(),
+        questionType: zod
+          .enum(["text", "single_choice", "multiple_choice"])
+          .optional(),
+        options: zod.array(zod.string()).nullish(),
+        required: zod.boolean().optional(),
+      }),
+    )
+    .nullish(),
+});
+
+export const UpdateJobResponse = zod.object({
+  id: zod.number(),
+  companyId: zod.number(),
+  title: zod.string(),
+  description: zod.string(),
+  industry: zod.string().nullish(),
+  locality: zod.string().nullish(),
+  modality: zod.enum(["presencial", "remoto", "hibrido"]),
+  contractType: zod.enum(["full_time", "part_time", "freelance", "pasantia"]),
+  salaryMin: zod.number().nullish(),
+  salaryMax: zod.number().nullish(),
+  requirements: zod.string().nullish(),
+  benefits: zod.string().nullish(),
+  isActive: zod.boolean(),
+  adminApproved: zod.boolean(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Delete a job posting
+ */
+export const DeleteJobParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteJobResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Apply to a job posting
+ */
+export const ApplyToJobParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ApplyToJobBody = zod.object({
+  coverLetter: zod.string().nullish(),
+  answers: zod
+    .array(
+      zod.object({
+        questionId: zod.number(),
+        answerText: zod.string().nullish(),
+      }),
+    )
+    .optional(),
+});
+
+/**
+ * @summary Get applications for a job (company only)
+ */
+export const GetJobApplicationsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetJobApplicationsResponseItem = zod
+  .object({
+    id: zod.number(),
+    jobId: zod.number(),
+    applicantId: zod.number(),
+    coverLetter: zod.string().nullish(),
+    status: zod.enum(["pending", "reviewed", "accepted", "rejected"]),
+    createdAt: zod.string(),
+  })
+  .and(
+    zod.object({
+      applicant: zod.object({
+        id: zod.number(),
+        name: zod.string(),
+        email: zod.string(),
+        phone: zod.string().nullish(),
+        avatarUrl: zod.string().nullish(),
+        locality: zod.string().nullish(),
+        cvUrl: zod.string().nullish(),
+      }),
+      answers: zod.array(
+        zod.object({
+          id: zod.number(),
+          applicationId: zod.number(),
+          questionId: zod.number(),
+          answerText: zod.string().nullish(),
+          question: zod
+            .object({
+              id: zod.number(),
+              jobId: zod.number(),
+              questionText: zod.string(),
+              questionType: zod.enum([
+                "text",
+                "single_choice",
+                "multiple_choice",
+              ]),
+              options: zod.array(zod.string()).nullish(),
+              required: zod.boolean(),
+              sortOrder: zod.number(),
+            })
+            .optional(),
+        }),
+      ),
+    }),
+  );
+export const GetJobApplicationsResponse = zod.array(
+  GetJobApplicationsResponseItem,
+);
+
+/**
+ * @summary Update application status (company only)
+ */
+export const UpdateApplicationStatusParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateApplicationStatusBody = zod.object({
+  status: zod.enum(["pending", "reviewed", "accepted", "rejected"]),
+});
+
+export const UpdateApplicationStatusResponse = zod.object({
+  id: zod.number(),
+  jobId: zod.number(),
+  applicantId: zod.number(),
+  coverLetter: zod.string().nullish(),
+  status: zod.enum(["pending", "reviewed", "accepted", "rejected"]),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Get public CVs (company only)
+ */
+export const GetPublicCvsQueryParams = zod.object({
+  search: zod.coerce.string().nullish(),
+  locality: zod.coerce.string().nullish(),
+});
+
+export const GetPublicCvsResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  phone: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  locality: zod.string().nullish(),
+  cvUrl: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+export const GetPublicCvsResponse = zod.array(GetPublicCvsResponseItem);
+
+/**
+ * @summary Get all company accounts (admin only)
+ */
+export const AdminGetCompaniesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  companyName: zod.string().nullish(),
+  cuit: zod.string().nullish(),
+  companyAddress: zod.string().nullish(),
+  companyIndustry: zod.string().nullish(),
+  companyApproved: zod.boolean(),
+  locality: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+export const AdminGetCompaniesResponse = zod.array(
+  AdminGetCompaniesResponseItem,
+);
+
+/**
+ * @summary Approve or reject a company account (admin only)
+ */
+export const AdminApproveCompanyParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminApproveCompanyBody = zod.object({
+  approved: zod.boolean(),
+});
+
+export const AdminApproveCompanyResponse = zod.object({
+  success: zod.boolean(),
+});

@@ -13,4 +13,5 @@ export const RegisterBodyRole = {
   provider: "provider",
   client: "client",
   admin: "admin",
+  company: "company",
 } as const;

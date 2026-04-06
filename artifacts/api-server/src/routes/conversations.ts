@@ -1,8 +1,10 @@
 import { Router, type IRouter } from "express";
-import { db, conversationsTable, messagesTable, usersTable, listingsTable, categoriesTable } from "@workspace/db";
-import { eq, or, and, desc } from "drizzle-orm";
+import { db, conversationsTable, messagesTable, usersTable, listingsTable, categoriesTable, bookingsTable } from "@workspace/db";
+import { eq, or, and, desc, sql } from "drizzle-orm";
 import { CreateConversationBody, SendMessageBody } from "@workspace/api-zod";
 import { inArray } from "drizzle-orm";
+import { sendEmail, buildNewMessageEmail } from "../lib/email";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -25,7 +27,9 @@ router.get("/conversations", async (req, res): Promise<void> => {
     return;
   }
 
-  const convs = await db
+  const [currentUser] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+
+  let convs = await db
     .select()
     .from(conversationsTable)
     .where(or(eq(conversationsTable.clientId, userId), eq(conversationsTable.providerId, userId)))
@@ -34,6 +38,41 @@ router.get("/conversations", async (req, res): Promise<void> => {
   if (convs.length === 0) {
     res.json([]);
     return;
+  }
+
+  // For providers: only show conversations that have at least 1 message or are linked to a booking
+  if (currentUser?.role === "provider") {
+    const convIds = convs.map(c => c.id);
+    const convsWithMessages = await db
+      .select({ conversationId: messagesTable.conversationId })
+      .from(messagesTable)
+      .where(inArray(messagesTable.conversationId, convIds))
+      .groupBy(messagesTable.conversationId);
+    const convsWithMsgIds = new Set(convsWithMessages.map(m => m.conversationId));
+
+    const convListingIds = convs.map(c => c.listingId).filter((id): id is number => id !== null);
+    let convsWithBookingIds = new Set<number>();
+    if (convListingIds.length > 0) {
+      const bookings = await db
+        .select({ listingId: bookingsTable.listingId, clientId: bookingsTable.clientId })
+        .from(bookingsTable)
+        .where(and(
+          inArray(bookingsTable.listingId, convListingIds),
+          eq(bookingsTable.providerId, userId)
+        ));
+      // Map booking clientId+listingId to conversation IDs
+      for (const conv of convs) {
+        if (conv.listingId && bookings.some(b => b.listingId === conv.listingId && b.clientId === conv.clientId)) {
+          convsWithBookingIds.add(conv.id);
+        }
+      }
+    }
+
+    convs = convs.filter(c => convsWithMsgIds.has(c.id) || convsWithBookingIds.has(c.id));
+    if (convs.length === 0) {
+      res.json([]);
+      return;
+    }
   }
 
   const userIds = [...new Set([...convs.map(c => c.clientId), ...convs.map(c => c.providerId)])];
@@ -183,6 +222,18 @@ router.post("/conversations", async (req, res): Promise<void> => {
     listingId: listingId ?? null,
   }).returning();
 
+  // Auto-send a first message referencing the listing
+  if (listingId) {
+    const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.id, listingId));
+    if (listing) {
+      await db.insert(messagesTable).values({
+        conversationId: conv.id,
+        senderId: userId,
+        content: `📌 Hola, estoy interesado/a en tu publicación: "${listing.title}"`,
+      });
+    }
+  }
+
   res.status(201).json({
     id: conv.id,
     clientId: conv.clientId,
@@ -283,6 +334,24 @@ router.post("/conversations/:id/messages", async (req, res): Promise<void> => {
   }).returning();
 
   const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+
+  // Notify the other participant
+  const recipientId = conv.clientId === userId ? conv.providerId : conv.clientId;
+  const [recipient] = await db.select().from(usersTable).where(eq(usersTable.id, recipientId));
+
+  if (recipient) {
+    const baseUrl = process.env.APP_URL || "http://localhost:5173";
+    const chatUrl = `${baseUrl}/mensajes/${conv.id}`;
+
+    // Email notification
+    if (recipient.notifyEmail) {
+      sendEmail(
+        recipient.email,
+        `Nuevo mensaje de ${sender.name} - ServiMarket`,
+        buildNewMessageEmail(recipient.name, sender.name, parsed.data.content, chatUrl),
+      ).catch(err => logger.error({ err }, "Failed to send message email notification"));
+    }
+  }
 
   res.status(201).json({
     id: message.id,

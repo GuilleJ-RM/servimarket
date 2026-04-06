@@ -75,7 +75,7 @@ export default function Mensajes() {
                     <div className={`px-3 py-3 md:px-5 md:py-4 flex items-start gap-3 hover:bg-muted/30 transition-colors cursor-pointer group ${isAdminConv ? 'bg-amber-50/50 dark:bg-amber-950/10' : ''}`}>
                       <div className={`w-11 h-11 md:w-12 md:h-12 rounded-full overflow-hidden flex-shrink-0 relative border-2 transition-colors ${isAdminConv ? 'border-amber-400 ring-2 ring-amber-200' : 'border-transparent group-hover:border-primary'}`}>
                         {otherUser.avatarUrl ? (
-                          <img src={otherUser.avatarUrl} alt="" className="w-full h-full object-cover" />
+                          <img src={otherUser.avatarUrl.startsWith("/api") ? otherUser.avatarUrl : `/api${otherUser.avatarUrl}`} alt="" className="w-full h-full object-cover" />
                         ) : (
                           <div className={`w-full h-full flex items-center justify-center font-bold text-base md:text-lg ${isAdminConv ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' : 'bg-secondary text-secondary-foreground'}`}>
                             {isAdminConv ? <ShieldCheck className="w-5 h-5" /> : otherUser.name.slice(0, 2).toUpperCase()}

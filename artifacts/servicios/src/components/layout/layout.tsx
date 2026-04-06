@@ -14,6 +14,7 @@ import {
   Shield,
   Headphones,
   ClipboardList,
+  Briefcase,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,14 +25,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useCreateSupportConversation } from "@workspace/api-client-react";
+import { useCreateSupportConversation, useGetConversations, getGetConversationsQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { user, logout, isProvider, isAdmin } = useAuth();
+  const { user, logout, isProvider, isAdmin, isCompany } = useAuth();
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const supportMutation = useCreateSupportConversation();
+
+  // Fetch conversations to compute global unread count
+  const { data: conversations } = useGetConversations({
+    query: {
+      queryKey: getGetConversationsQueryKey(),
+      enabled: !!user,
+      refetchInterval: 10000, // Poll every 10s for badge updates
+    }
+  });
+  const totalUnread = conversations?.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0) ?? 0;
 
   const handleSupport = () => {
     supportMutation.mutate(undefined, {
@@ -53,11 +65,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <Link href="/servicios" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
         Explorar
       </Link>
+      <Link href="/trabajos" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
+        <Briefcase className="w-4 h-4" />
+        Trabajos
+      </Link>
       {user && (
         <>
           <Link href="/mensajes" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
             <MessageSquare className="w-4 h-4" />
             Mensajes
+            {totalUnread > 0 && (
+              <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-[10px] rounded-full">
+                {totalUnread > 99 ? "99+" : totalUnread}
+              </Badge>
+            )}
           </Link>
           <Link href="/pedidos" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
             <ClipboardList className="w-4 h-4" />
@@ -82,6 +103,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           </Button>
         </>
+      )}
+      {isCompany && (
+        <>
+          <Link href="/mis-trabajos" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
+            <Briefcase className="w-4 h-4" />
+            Mis Vacantes
+          </Link>
+          <Button asChild size="sm" className="ml-2">
+            <Link href="/publicar-trabajo">
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Publicar vacante
+            </Link>
+          </Button>
+        </>
+      )}
+      {user && !isProvider && !isAdmin && !isCompany && (
+        <Link href="/mis-postulaciones" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
+          <ClipboardList className="w-4 h-4" />
+          Mis Postulaciones
+        </Link>
       )}
       {isAdmin && (
         <Link href="/admin" className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2">
@@ -135,10 +176,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <div className="flex h-full w-full items-center justify-center rounded-full bg-muted">
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 overflow-hidden">
+                    <div className="flex h-full w-full items-center justify-center rounded-full bg-muted overflow-hidden">
                       {user.avatarUrl ? (
-                        <img src={user.avatarUrl} alt={user.name} className="h-full w-full rounded-full object-cover" />
+                        <img src={user.avatarUrl.startsWith("/api") ? user.avatarUrl : `/api${user.avatarUrl}`} alt={user.name} className="h-9 w-9 rounded-full object-cover" />
                       ) : (
                         <span className="text-sm font-medium uppercase">{user.name.slice(0, 2)}</span>
                       )}
@@ -153,6 +194,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setLocation("/perfil")} className="cursor-pointer">
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    <span>Mi perfil</span>
+                  </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => setLocation("/admin")} className="cursor-pointer">
                       <Shield className="mr-2 h-4 w-4" />

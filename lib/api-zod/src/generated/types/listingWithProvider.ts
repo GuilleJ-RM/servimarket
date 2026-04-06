@@ -27,6 +27,7 @@ export interface ListingWithProvider {
   whatsapp?: string | null;
   paymentMethods: string[];
   isActive: boolean;
+  adminApproved: boolean;
   /** @nullable */
   quantity?: number | null;
   status: ListingWithProviderStatus;

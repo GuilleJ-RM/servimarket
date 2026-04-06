@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, listingsTable, usersTable, categoriesTable } from "@workspace/db";
-import { eq, and, ilike, inArray } from "drizzle-orm";
+import { eq, and, ilike, inArray, or, desc } from "drizzle-orm";
 import {
   CreateListingBody,
   UpdateListingBody,
@@ -26,6 +26,7 @@ function formatListing(l: typeof listingsTable.$inferSelect, provider: typeof us
     whatsapp: l.whatsapp,
     paymentMethods: l.paymentMethods,
     isActive: l.isActive,
+    adminApproved: l.adminApproved,
     quantity: l.quantity,
     status: l.status,
     pricingType: l.pricingType,
@@ -87,6 +88,7 @@ router.get("/listings/my", async (req, res): Promise<void> => {
       whatsapp: l.whatsapp,
       paymentMethods: l.paymentMethods,
       isActive: l.isActive,
+      adminApproved: l.adminApproved,
       quantity: l.quantity,
       status: l.status,
       pricingType: l.pricingType,
@@ -101,27 +103,44 @@ router.get("/listings/my", async (req, res): Promise<void> => {
 });
 
 router.get("/listings/featured", async (_req, res): Promise<void> => {
-  const categories = await db.select().from(categoriesTable).orderBy(categoriesTable.id);
-  const result = [];
-  for (const category of categories) {
-    const listings = await db
-      .select()
-      .from(listingsTable)
-      .where(and(eq(listingsTable.categoryId, category.id), eq(listingsTable.isActive, true)))
-      .orderBy(listingsTable.createdAt)
-      .limit(4);
+  // Single query: get all active+approved listings ordered by date
+  const allListings = await db
+    .select()
+    .from(listingsTable)
+    .where(and(eq(listingsTable.isActive, true), eq(listingsTable.adminApproved, true)))
+    .orderBy(desc(listingsTable.createdAt));
 
-    if (listings.length === 0) continue;
-
-    const providerIds = [...new Set(listings.map(l => l.providerId))];
-    const providers = await db.select().from(usersTable).where(inArray(usersTable.id, providerIds));
-    const providerMap = Object.fromEntries(providers.map(p => [p.id, p]));
-
-    result.push({
-      category: { id: category.id, name: category.name, icon: category.icon, type: category.type, description: category.description },
-      listings: listings.map(l => formatListing(l, providerMap[l.providerId], category)),
-    });
+  if (allListings.length === 0) {
+    res.json([]);
+    return;
   }
+
+  // Group by category, take up to 4 per category
+  const byCat: Record<number, (typeof allListings)[number][]> = {};
+  for (const l of allListings) {
+    if (!byCat[l.categoryId]) byCat[l.categoryId] = [];
+    if (byCat[l.categoryId].length < 4) byCat[l.categoryId].push(l);
+  }
+
+  // Batch fetch providers and categories
+  const providerIds = [...new Set(allListings.map(l => l.providerId))];
+  const categoryIds = Object.keys(byCat).map(Number);
+
+  const [providers, cats] = await Promise.all([
+    db.select().from(usersTable).where(inArray(usersTable.id, providerIds)),
+    db.select().from(categoriesTable).where(inArray(categoriesTable.id, categoryIds)),
+  ]);
+
+  const providerMap = Object.fromEntries(providers.map(p => [p.id, p]));
+  const catMap = Object.fromEntries(cats.map(c => [c.id, c]));
+
+  const result = cats
+    .filter(cat => byCat[cat.id]?.length > 0)
+    .map(cat => ({
+      category: { id: cat.id, name: cat.name, icon: cat.icon, type: cat.type, description: cat.description },
+      listings: byCat[cat.id].map(l => formatListing(l, providerMap[l.providerId], cat)),
+    }));
+
   res.json(result);
 });
 
@@ -133,40 +152,36 @@ router.get("/listings", async (req, res): Promise<void> => {
   }
   const { categoryId, type, search, locality } = parsed.data;
 
-  const conditions = [eq(listingsTable.isActive, true)];
+  const conditions = [eq(listingsTable.isActive, true), eq(listingsTable.adminApproved, true)];
   if (categoryId) conditions.push(eq(listingsTable.categoryId, categoryId));
   if (type) conditions.push(eq(listingsTable.type, type));
-
-  let rows = await db
-    .select()
-    .from(listingsTable)
-    .where(and(...conditions))
-    .orderBy(listingsTable.createdAt);
-
   if (search) {
-    const lower = search.toLowerCase();
-    rows = rows.filter(l => l.title.toLowerCase().includes(lower) || l.description.toLowerCase().includes(lower));
+    conditions.push(
+      or(
+        ilike(listingsTable.title, `%${search}%`),
+        ilike(listingsTable.description, `%${search}%`)
+      )!
+    );
   }
+
+  // Join with users to filter locality at DB level
+  const rows = await db
+    .select({ listing: listingsTable, provider: usersTable })
+    .from(listingsTable)
+    .innerJoin(usersTable, eq(listingsTable.providerId, usersTable.id))
+    .where(and(...conditions, locality ? eq(usersTable.locality, locality) : undefined))
+    .orderBy(desc(listingsTable.createdAt));
 
   if (rows.length === 0) {
     res.json([]);
     return;
   }
 
-  const providerIds = [...new Set(rows.map(l => l.providerId))];
-  const categoryIds = [...new Set(rows.map(l => l.categoryId))];
-  const providers = await db.select().from(usersTable).where(inArray(usersTable.id, providerIds));
+  const categoryIds = [...new Set(rows.map(r => r.listing.categoryId))];
   const cats = await db.select().from(categoriesTable).where(inArray(categoriesTable.id, categoryIds));
-  const providerMap = Object.fromEntries(providers.map(p => [p.id, p]));
   const catMap = Object.fromEntries(cats.map(c => [c.id, c]));
 
-  let results = rows.map(l => formatListing(l, providerMap[l.providerId], catMap[l.categoryId]));
-
-  if (locality) {
-    results = results.filter(l => l.provider.locality === locality);
-  }
-
-  res.json(results);
+  res.json(rows.map(r => formatListing(r.listing, r.provider, catMap[r.listing.categoryId])));
 });
 
 router.post("/listings", async (req, res): Promise<void> => {
@@ -220,6 +235,7 @@ router.post("/listings", async (req, res): Promise<void> => {
     whatsapp: listing.whatsapp,
     paymentMethods: listing.paymentMethods,
     isActive: listing.isActive,
+    adminApproved: listing.adminApproved,
     quantity: listing.quantity,
     status: listing.status,
     pricingType: listing.pricingType,
@@ -315,6 +331,7 @@ router.patch("/listings/:id", async (req, res): Promise<void> => {
     whatsapp: listing.whatsapp,
     paymentMethods: listing.paymentMethods,
     isActive: listing.isActive,
+    adminApproved: listing.adminApproved,
     quantity: listing.quantity,
     status: listing.status,
     pricingType: listing.pricingType,

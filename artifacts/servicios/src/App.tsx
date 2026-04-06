@@ -18,6 +18,14 @@ import Mensajes from "@/pages/mensajes";
 import Chat from "@/pages/chat";
 import Admin from "@/pages/admin";
 import Pedidos from "@/pages/pedidos";
+import Perfil from "@/pages/perfil";
+import OlvidePassword from "@/pages/olvide-password";
+import RestablecerPassword from "@/pages/restablecer-password";
+import Trabajos from "@/pages/trabajos";
+import Trabajo from "@/pages/trabajo";
+import PublicarTrabajo from "@/pages/publicar-trabajo";
+import MisTrabajos from "@/pages/mis-trabajos";
+import MisPostulaciones from "@/pages/mis-postulaciones";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +43,14 @@ function Router() {
       <Route path="/mensajes" component={Mensajes} />
       <Route path="/mensajes/:id" component={Chat} />
       <Route path="/pedidos" component={Pedidos} />
+      <Route path="/perfil" component={Perfil} />
+      <Route path="/olvide-password" component={OlvidePassword} />
+      <Route path="/restablecer-password" component={RestablecerPassword} />
+      <Route path="/trabajos" component={Trabajos} />
+      <Route path="/trabajo/:id" component={Trabajo} />
+      <Route path="/publicar-trabajo" component={PublicarTrabajo} />
+      <Route path="/mis-trabajos" component={MisTrabajos} />
+      <Route path="/mis-postulaciones" component={MisPostulaciones} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>

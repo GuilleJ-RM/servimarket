@@ -1,7 +1,7 @@
 import { Layout } from "@/components/layout/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Star, TrendingUp, ShieldCheck } from "lucide-react";
+import { Search, MapPin, Star, TrendingUp, ShieldCheck, Briefcase } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useGetCategories, useGetFeaturedListings } from "@workspace/api-client-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -206,6 +206,39 @@ export default function Home() {
         </div>
       </section>
       
+      {/* Job Board Section */}
+      <section className="py-10 md:py-16 lg:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
+            <div className="flex-1 text-center md:text-left">
+              <Badge className="mb-4 px-3 py-0.5 text-xs font-medium bg-primary/10 text-primary" variant="secondary">
+                Nuevo
+              </Badge>
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-3">Bolsa de Trabajo</h2>
+              <p className="text-muted-foreground text-sm md:text-base max-w-lg mb-6">
+                Encontrá oportunidades laborales publicadas por empresas verificadas. Postulate fácilmente con tu CV cargado.
+              </p>
+              <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+                <Button asChild size="lg" className="rounded-full font-bold">
+                  <Link href="/trabajos">
+                    <Briefcase className="w-5 h-5 mr-2" />
+                    Ver vacantes
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="rounded-full">
+                  <Link href="/registro">Registrar empresa</Link>
+                </Button>
+              </div>
+            </div>
+            <div className="w-full md:w-auto flex-shrink-0">
+              <div className="w-full md:w-64 h-40 md:h-48 bg-primary/10 rounded-2xl flex items-center justify-center">
+                <Briefcase className="w-16 h-16 md:w-20 md:h-20 text-primary/40" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-14 md:py-20 lg:py-24 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center max-w-3xl">

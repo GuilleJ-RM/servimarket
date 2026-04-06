@@ -17,6 +17,7 @@ export const listingsTable = pgTable("listings", {
   whatsapp: text("whatsapp"),
   paymentMethods: text("payment_methods").array().notNull().default([]),
   isActive: boolean("is_active").notNull().default(true),
+  adminApproved: boolean("admin_approved").notNull().default(false),
   quantity: integer("quantity"), // For products: stock count (null = unlimited/service)
   status: text("status").notNull().default("active"), // active | sold | paused
   pricingType: text("pricing_type").notNull().default("unit"), // unit | per_kilo (legacy)

@@ -327,7 +327,7 @@ export default function Servicios() {
                       <div className="hidden sm:flex items-center gap-1.5 pt-2 border-t mt-1">
                         <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-muted overflow-hidden flex-shrink-0 border">
                           {listing.provider.avatarUrl ? (
-                            <img src={listing.provider.avatarUrl} alt="" className="w-full h-full object-cover" />
+                            <img src={listing.provider.avatarUrl.startsWith("/api") ? listing.provider.avatarUrl : `/api${listing.provider.avatarUrl}`} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full bg-secondary text-secondary-foreground flex items-center justify-center text-[8px] md:text-[10px] font-bold">
                               {listing.provider.name.slice(0, 2).toUpperCase()}

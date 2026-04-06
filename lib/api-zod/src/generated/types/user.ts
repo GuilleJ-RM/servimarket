@@ -18,5 +18,20 @@ export interface User {
   avatarUrl?: string | null;
   /** @nullable */
   locality?: string | null;
+  /** @nullable */
+  whatsapp?: string | null;
+  notifyEmail: boolean;
+  /** @nullable */
+  companyName?: string | null;
+  /** @nullable */
+  cuit?: string | null;
+  /** @nullable */
+  companyAddress?: string | null;
+  /** @nullable */
+  companyIndustry?: string | null;
+  companyApproved: boolean;
+  /** @nullable */
+  cvUrl?: string | null;
+  cvPublic: boolean;
   createdAt: string;
 }

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -7,10 +7,24 @@ export const usersTable = pgTable("users", {
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  role: text("role").notNull().default("client"),
+  role: text("role").notNull().default("client"), // client | provider | admin | company
   phone: text("phone"),
   avatarUrl: text("avatar_url"),
   locality: text("locality"),
+  whatsapp: text("whatsapp"),
+  notifyEmail: boolean("notify_email").notNull().default(true),
+  notifyWhatsapp: boolean("notify_whatsapp").notNull().default(false),
+  resetTokenHash: text("reset_token_hash"),
+  resetTokenExpiry: timestamp("reset_token_expiry", { withTimezone: true }),
+  // Company fields (role = "company")
+  companyName: text("company_name"),
+  cuit: text("cuit"),
+  companyAddress: text("company_address"),
+  companyIndustry: text("company_industry"),
+  companyApproved: boolean("company_approved").notNull().default(false),
+  // CV fields (for clients)
+  cvUrl: text("cv_url"),
+  cvPublic: boolean("cv_public").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

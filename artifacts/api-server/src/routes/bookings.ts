@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, bookingsTable, listingsTable, usersTable } from "@workspace/db";
+import { db, bookingsTable, listingsTable, usersTable, conversationsTable, messagesTable } from "@workspace/db";
 import { eq, or, and, desc, inArray } from "drizzle-orm";
 import { CreateBookingBody, UpdateBookingStatusBody, UpdateBookingBody } from "@workspace/api-zod";
 
@@ -139,6 +139,51 @@ router.post("/bookings", async (req, res): Promise<void> => {
     notes: notes ?? null,
     quantity: bookingQuantity,
   }).returning();
+
+  // Auto-send a web message with booking details
+  try {
+    // Find or create conversation between client and provider for this listing
+    let [conv] = await db.select().from(conversationsTable).where(
+      or(
+        and(eq(conversationsTable.clientId, userId), eq(conversationsTable.providerId, listing.providerId)),
+        and(eq(conversationsTable.clientId, listing.providerId), eq(conversationsTable.providerId, userId))
+      )
+    );
+    if (!conv) {
+      [conv] = await db.insert(conversationsTable).values({
+        clientId: userId,
+        providerId: listing.providerId,
+        listingId,
+      }).returning();
+    }
+
+    // Build the auto-message content
+    const isService = listing.type === "service";
+    const [client] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+    let msgContent = isService
+      ? `📋 Nuevo agendamiento de servicio`
+      : `📋 Nuevo pedido de compra`;
+    msgContent += `\n📌 Publicación: ${listing.title}`;
+    if (scheduledDate) {
+      const d = new Date(scheduledDate);
+      msgContent += `\n📅 Fecha: ${d.toLocaleDateString("es-AR")} a las ${d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`;
+    }
+    if (!isService && bookingQuantity > 1) {
+      msgContent += `\n📦 Cantidad: ${bookingQuantity}`;
+    }
+    if (notes) {
+      msgContent += `\n📝 Notas: ${notes}`;
+    }
+    msgContent += `\n\n⏳ Estado: Pendiente de confirmación`;
+
+    await db.insert(messagesTable).values({
+      conversationId: conv.id,
+      senderId: userId,
+      content: msgContent,
+    });
+  } catch (_err) {
+    // Non-critical: don't fail the booking if message fails
+  }
 
   res.status(201).json({
     id: booking.id,

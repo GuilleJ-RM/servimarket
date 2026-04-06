@@ -16,4 +16,12 @@ export interface RegisterBody {
   phone?: string | null;
   /** @nullable */
   locality?: string | null;
+  /** @nullable */
+  companyName?: string | null;
+  /** @nullable */
+  cuit?: string | null;
+  /** @nullable */
+  companyAddress?: string | null;
+  /** @nullable */
+  companyIndustry?: string | null;
 }

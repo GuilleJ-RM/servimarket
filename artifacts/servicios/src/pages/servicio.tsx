@@ -5,8 +5,9 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageSquare, Phone, CheckCircle2, ShieldCheck, MapPin, Calendar, Clock, Star, ShoppingCart, Package, ChevronLeft, ChevronRight } from "lucide-react";
+import { MessageSquare, Phone, CheckCircle2, ShieldCheck, MapPin, Calendar, Clock, Star, ShoppingCart, Package, ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -46,6 +47,7 @@ export default function Servicio() {
   const [bookingTime, setBookingTime] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<string>("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Auto-select first variant when listing loads
   useEffect(() => {
@@ -223,22 +225,28 @@ export default function Servicio() {
               
               return (
                 <div className="space-y-3">
-                  <div className="relative rounded-2xl overflow-hidden shadow-lg border-2 bg-muted aspect-video">
+                  <div
+                    className="relative rounded-2xl overflow-hidden shadow-lg border-2 bg-muted cursor-pointer group"
+                    onClick={() => setLightboxOpen(true)}
+                  >
                     <img 
                       src={allImages[currentImageIndex]} 
                       alt={listing.title} 
-                      className="w-full h-full object-cover"
+                      className="w-full h-auto max-h-[70vh] object-contain bg-muted mx-auto"
                     />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                      <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
+                    </div>
                     {allImages.length > 1 && (
                       <>
                         <button
-                          onClick={() => setCurrentImageIndex(i => i === 0 ? allImages.length - 1 : i - 1)}
+                          onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i => i === 0 ? allImages.length - 1 : i - 1); }}
                           className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
                         >
                           <ChevronLeft className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={() => setCurrentImageIndex(i => i === allImages.length - 1 ? 0 : i + 1)}
+                          onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(i => i === allImages.length - 1 ? 0 : i + 1); }}
                           className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
                         >
                           <ChevronRight className="w-5 h-5" />
@@ -264,6 +272,37 @@ export default function Servicio() {
                       ))}
                     </div>
                   )}
+
+                  {/* Lightbox modal */}
+                  <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+                    <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none flex items-center justify-center overflow-hidden">
+                      <DialogTitle className="sr-only">Imagen de {listing.title}</DialogTitle>
+                      <img
+                        src={allImages[currentImageIndex]}
+                        alt={listing.title}
+                        className="max-w-full max-h-[90vh] object-contain select-none"
+                      />
+                      {allImages.length > 1 && (
+                        <>
+                          <button
+                            onClick={() => setCurrentImageIndex(i => i === 0 ? allImages.length - 1 : i - 1)}
+                            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center transition-colors"
+                          >
+                            <ChevronLeft className="w-6 h-6" />
+                          </button>
+                          <button
+                            onClick={() => setCurrentImageIndex(i => i === allImages.length - 1 ? 0 : i + 1)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center transition-colors"
+                          >
+                            <ChevronRight className="w-6 h-6" />
+                          </button>
+                          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white text-sm px-4 py-1.5 rounded-full">
+                            {currentImageIndex + 1} / {allImages.length}
+                          </div>
+                        </>
+                      )}
+                    </DialogContent>
+                  </Dialog>
                 </div>
               );
             })()}
@@ -329,7 +368,7 @@ export default function Servicio() {
           </div>
 
           <div className="space-y-6">
-            <Card className="border-2 shadow-lg sticky top-24">
+            <Card className="border-2 shadow-lg">
               <CardContent className="p-6">
                 <div className="text-4xl font-extrabold text-primary mb-2">
                   {(listing as any).sizes?.length > 0 && selectedVariant ? (
@@ -358,7 +397,7 @@ export default function Servicio() {
                        (listing as any).variantLabel === "color" ? "Seleccionar color" :
                        "Seleccionar variante"}
                     </label>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
                       {(listing as any).sizes.map((s: any) => {
                         const varName = s.name || s.size || "";
                         const isDisabled = listing.type === "product" && s.stock !== null && s.stock !== undefined && s.stock === 0;
@@ -489,7 +528,7 @@ export default function Servicio() {
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-16 h-16 rounded-full bg-primary/20 overflow-hidden flex-shrink-0 border-2 border-primary/20">
                     {listing.provider.avatarUrl ? (
-                      <img src={listing.provider.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      <img src={listing.provider.avatarUrl.startsWith("/api") ? listing.provider.avatarUrl : `/api${listing.provider.avatarUrl}`} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full text-primary flex items-center justify-center text-xl font-bold">
                         {listing.provider.name.slice(0, 2).toUpperCase()}

@@ -11,6 +11,7 @@ interface AuthContextType {
   isProvider: boolean;
   isClient: boolean;
   isAdmin: boolean;
+  isCompany: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isProvider: user?.role === "provider",
     isClient: user?.role === "client",
     isAdmin: user?.role === "admin",
+    isCompany: user?.role === "company",
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

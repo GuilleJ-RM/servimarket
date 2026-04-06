@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { useGetMyListings, useUpdateListing, useDeleteListing, getGetMyListingsQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { PlusCircle, Edit, Trash2, Eye, ExternalLink, Package, ShoppingBag } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Eye, ExternalLink, Package, ShoppingBag, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -159,6 +159,12 @@ export default function MisPublicaciones() {
                         </Badge>
                         {listing.status === 'sold' && (
                           <Badge variant="destructive" className="text-xs">Vendido</Badge>
+                        )}
+                        {!(listing as any).adminApproved && listing.status !== 'sold' && (
+                          <Badge variant="outline" className="text-xs border-amber-400 text-amber-600 bg-amber-50">
+                            <Clock className="w-3 h-3 mr-1" />
+                            Pendiente de aprobación
+                          </Badge>
                         )}
                         {listing.type === "product" && listing.quantity !== null && listing.quantity !== undefined && listing.status !== 'sold' && (
                           <Badge variant="outline" className="text-xs">

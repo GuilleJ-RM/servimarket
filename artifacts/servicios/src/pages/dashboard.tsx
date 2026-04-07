@@ -6,6 +6,7 @@ import { Package, MessageSquare, TrendingUp, Eye, PlusCircle } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
+import { imgUrl } from "@/lib/utils";
 
 export default function Dashboard() {
   const { user, isProvider } = useAuth();
@@ -112,7 +113,7 @@ export default function Dashboard() {
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-muted rounded-lg overflow-hidden flex-shrink-0">
                           {listing.imageUrl ? (
-                            <img src={listing.imageUrl} alt="" className="w-full h-full object-cover" />
+                            <img src={imgUrl(listing.imageUrl)} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-xl bg-primary/10 text-primary">
                               {listing.category?.icon}
@@ -165,7 +166,7 @@ export default function Dashboard() {
                         <div className="p-4 flex items-start gap-4 hover:bg-muted/30 transition-colors cursor-pointer">
                           <div className="w-10 h-10 rounded-full bg-muted overflow-hidden flex-shrink-0 relative">
                             {otherUser.avatarUrl ? (
-                              <img src={otherUser.avatarUrl} alt="" className="w-full h-full object-cover" />
+                              <img src={imgUrl(otherUser.avatarUrl)} alt="" className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full bg-secondary text-secondary-foreground flex items-center justify-center font-bold">
                                 {otherUser.name.slice(0, 2).toUpperCase()}

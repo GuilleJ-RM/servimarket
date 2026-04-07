@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { imgUrl } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -131,7 +132,7 @@ export default function MisPublicaciones() {
               <div key={listing.id} className={`flex flex-col sm:flex-row gap-6 p-6 rounded-2xl border-2 shadow-sm transition-all ${listing.status === 'sold' ? 'opacity-60 bg-red-50/30' : !listing.isActive ? 'opacity-70 bg-muted/30' : 'bg-card'}`}>
                 <div className="w-full sm:w-48 aspect-video sm:aspect-square bg-muted rounded-xl overflow-hidden flex-shrink-0 relative">
                   {listing.imageUrl ? (
-                    <img src={listing.imageUrl} alt={listing.title} className="w-full h-full object-cover" />
+                    <img src={imgUrl(listing.imageUrl)} alt={listing.title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-4xl text-primary/20 bg-primary/5">
                       {listing.category?.icon || "📦"}

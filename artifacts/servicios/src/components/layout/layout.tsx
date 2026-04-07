@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   Menu, 
   Search, 
   MessageSquare, 
@@ -10,12 +10,12 @@ import {
   LayoutDashboard, 
   ListPlus, 
   PlusCircle,
-  ShoppingBag,
   Shield,
   Headphones,
   ClipboardList,
   Briefcase,
   FileText,
+  MailWarning,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,9 +26,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useCreateSupportConversation, useGetConversations, getGetConversationsQueryKey } from "@workspace/api-client-react";
+import { useCreateSupportConversation, useGetConversations, getGetConversationsQueryKey, useResendVerification, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { useQueryClient } from "@tanstack/react-query";
+import { imgUrl } from "@/lib/utils";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout, isProvider, isAdmin, isCompany } = useAuth();
@@ -45,6 +47,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }
   });
   const totalUnread = conversations?.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0) ?? 0;
+
+  const resendVerification = useResendVerification();
+  const queryClient = useQueryClient();
+  const showVerificationBanner = user && !user.emailVerified;
+
+  const handleResendVerification = () => {
+    resendVerification.mutate(undefined, {
+      onSuccess: () => {
+        toast({
+          title: "Email enviado",
+          description: "Revisá tu bandeja de entrada para verificar tu email.",
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "No se pudo enviar el email de verificación.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   const handleSupport = () => {
     supportMutation.mutate(undefined, {
@@ -154,9 +178,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
               <SheetContent side="left" className="w-[300px] sm:w-[400px]">
                 <div className="flex flex-col gap-6 pt-6">
-                  <Link href="/" className="flex items-center gap-2 text-xl font-bold text-primary">
-                    <ShoppingBag className="w-6 h-6" />
-                    ServiMarket
+                  <Link href="/" className="flex items-center gap-2">
+                    <img src="/logo2.png" alt="Mil Laburos" className="h-20 w-auto" />
                   </Link>
                   <nav className="flex flex-col gap-4">
                     <NavLinks />
@@ -165,13 +188,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
 
-            <Link href="/" className="flex items-center gap-2 text-xl font-bold text-primary hidden md:flex">
-              <ShoppingBag className="w-6 h-6" />
-              ServiMarket
+            <Link href="/" className="hidden md:flex items-center">
+              <img src="/logo2.png" alt="Mil Laburos" className="h-20 w-auto" />
             </Link>
-            <Link href="/" className="flex items-center gap-1.5 text-lg font-bold text-primary md:hidden">
-              <ShoppingBag className="w-5 h-5" />
-              ServiMarket
+            <Link href="/" className="flex items-center md:hidden">
+              <img src="/logo2.png" alt="Mil Laburos" className="h-20 w-auto" />
             </Link>
           </div>
 
@@ -186,7 +207,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 overflow-hidden">
                     <div className="flex h-full w-full items-center justify-center rounded-full bg-muted overflow-hidden">
                       {user.avatarUrl ? (
-                        <img src={user.avatarUrl.startsWith("/api") ? user.avatarUrl : `/api${user.avatarUrl}`} alt={user.name} className="h-9 w-9 rounded-full object-cover" />
+                        <img src={imgUrl(user.avatarUrl)} alt={user.name} className="h-9 w-9 rounded-full object-cover" />
                       ) : (
                         <span className="text-sm font-medium uppercase">{user.name.slice(0, 2)}</span>
                       )}
@@ -237,12 +258,52 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+      {showVerificationBanner && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800 px-4 py-2.5">
+          <div className="container mx-auto flex items-center justify-between gap-3 text-sm">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+              <MailWarning className="w-4 h-4 flex-shrink-0" />
+              <span>Tu email no está verificado. Verificalo para recibir notificaciones.</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-shrink-0 border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900"
+              onClick={handleResendVerification}
+              disabled={resendVerification.isPending}
+            >
+              {resendVerification.isPending ? "Enviando..." : "Reenviar email"}
+            </Button>
+          </div>
+        </div>
+      )}
       <main className="flex-1 flex flex-col">{children}</main>
-      <footer className="border-t py-4 md:py-0">
-        <div className="container flex flex-col items-center justify-between gap-3 md:h-16 md:flex-row mx-auto px-4">
-          <p className="text-center text-xs md:text-sm leading-loose text-muted-foreground md:text-left">
-            Construido para conectar la comunidad. ServiMarket &copy; {new Date().getFullYear()}.
-          </p>
+      <footer className="border-t py-6 md:py-8 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex flex-col items-center md:items-start gap-1">
+              <div className="flex items-center">
+                <img src="/logo2.png" alt="Mil Laburos" className="h-10 w-auto" />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Conectamos servicios y oportunidades.
+              </p>
+            </div>
+            <div className="flex flex-col items-center md:items-end gap-1.5 text-xs text-muted-foreground">
+              <div className="flex items-center gap-3">
+                <a href="mailto:soporte@millaburos.com" className="hover:text-primary transition-colors">
+                  soporte@millaburos.com
+                </a>
+                <span className="text-border">|</span>
+                <Link href="/terminos" className="hover:text-primary transition-colors">
+                  Términos y Condiciones
+                </Link>
+              </div>
+              <p>
+                &copy; {new Date().getFullYear()} Mil Laburos. Desarrollado por <strong>RMSoluciones</strong>.
+              </p>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

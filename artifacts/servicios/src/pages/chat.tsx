@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Send, ArrowLeft, ExternalLink, MessageSquare, ShieldCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { imgUrl } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -93,7 +94,7 @@ export default function Chat() {
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <div className={`w-9 h-9 md:w-10 md:h-10 rounded-full overflow-hidden flex-shrink-0 ${isAdminChat ? 'ring-2 ring-amber-400 border-2 border-amber-300' : 'bg-muted'}`}>
                 {otherUser.avatarUrl ? (
-                  <img src={otherUser.avatarUrl.startsWith("/api") ? otherUser.avatarUrl : `/api${otherUser.avatarUrl}`} alt="" className="w-full h-full object-cover" />
+                  <img src={imgUrl(otherUser.avatarUrl)} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className={`w-full h-full flex items-center justify-center font-bold text-sm ${isAdminChat ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' : 'bg-secondary text-secondary-foreground'}`}>
                     {isAdminChat ? <ShieldCheck className="w-5 h-5" /> : otherUser.name.slice(0, 2).toUpperCase()}
@@ -151,7 +152,7 @@ export default function Chat() {
                   {isAdminMsg && !isMine && (
                     <div className="flex items-center gap-1 text-[10px] text-amber-600 font-medium mb-0.5 px-1">
                       <ShieldCheck className="w-3 h-3" />
-                      Soporte ServiMarket
+                      Soporte Mil Laburos
                     </div>
                   )}
                   <div 

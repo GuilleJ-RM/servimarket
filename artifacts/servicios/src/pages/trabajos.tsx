@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { Search, MapPin, Briefcase, Building2, Clock, DollarSign } from "lucide-react";
 import { useState } from "react";
+import { imgUrl } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const MODALITY_LABELS: Record<string, string> = {
@@ -93,7 +94,7 @@ export default function Trabajos() {
                     <div className="flex flex-col md:flex-row md:items-start gap-4">
                       <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                         {job.company?.avatarUrl ? (
-                          <img src={job.company.avatarUrl.startsWith("/api") ? job.company.avatarUrl : `/api${job.company.avatarUrl}`} alt="" className="w-full h-full rounded-lg object-cover" />
+                          <img src={imgUrl(job.company.avatarUrl)} alt="" className="w-full h-full rounded-lg object-cover" />
                         ) : (
                           <Building2 className="w-6 h-6 text-primary" />
                         )}

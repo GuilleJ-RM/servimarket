@@ -8,6 +8,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
+import { imgUrl } from "@/lib/utils";
 
 export default function Home() {
   const { data: categories, isLoading: loadingCategories } = useGetCategories();
@@ -90,7 +91,7 @@ export default function Home() {
                     <div className="aspect-[4/3] w-full overflow-hidden relative bg-muted">
                       {((listing as any).images?.length > 0 ? (listing as any).images[0] : listing.imageUrl) ? (
                         <img 
-                          src={(listing as any).images?.length > 0 ? (listing as any).images[0] : listing.imageUrl} 
+                          src={imgUrl((listing as any).images?.length > 0 ? (listing as any).images[0] : listing.imageUrl)} 
                           alt={listing.title} 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
@@ -111,7 +112,7 @@ export default function Home() {
                       <div className="hidden sm:flex items-center gap-2 mt-auto pt-3 md:pt-4">
                         <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-muted overflow-hidden flex-shrink-0">
                           {listing.provider?.avatarUrl ? (
-                            <img src={listing.provider.avatarUrl} alt="" className="w-full h-full object-cover" />
+                            <img src={imgUrl(listing.provider.avatarUrl)} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full bg-secondary text-secondary-foreground flex items-center justify-center text-[8px] md:text-[10px] font-bold">
                               {listing.provider?.name?.slice(0, 2).toUpperCase()}
@@ -244,7 +245,7 @@ export default function Home() {
         <div className="container mx-auto px-4 text-center max-w-3xl">
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 tracking-tight">¿Eres un profesional?</h2>
           <p className="text-sm md:text-lg lg:text-xl text-primary-foreground/80 mb-6 md:mb-10">
-            Únete a ServiMarket y comienza a ofrecer tus servicios a cientos de clientes locales hoy mismo.
+            Únete a Mil Laburos y comienza a ofrecer tus servicios a cientos de clientes locales hoy mismo.
           </p>
           <Button size="lg" variant="secondary" asChild className="rounded-full h-11 md:h-14 px-6 md:px-10 text-sm md:text-lg font-bold">
             <Link href="/registro">Comenzar a vender</Link>

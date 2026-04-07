@@ -3,6 +3,7 @@ import { useGetCategories, useGetListings } from "@workspace/api-client-react";
 import type { GetListingsType } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout/layout";
 import { useAuth } from "@/lib/auth";
+import { imgUrl } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Filter, SlidersHorizontal, MapPin, Star } from "lucide-react";
@@ -288,7 +289,7 @@ export default function Servicios() {
                     <div className="aspect-[3/2] w-full overflow-hidden relative bg-muted">
                       {imgSrc ? (
                         <img 
-                          src={imgSrc} 
+                          src={imgUrl(imgSrc)} 
                           alt={listing.title} 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
@@ -327,7 +328,7 @@ export default function Servicios() {
                       <div className="hidden sm:flex items-center gap-1.5 pt-2 border-t mt-1">
                         <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-muted overflow-hidden flex-shrink-0 border">
                           {listing.provider.avatarUrl ? (
-                            <img src={listing.provider.avatarUrl.startsWith("/api") ? listing.provider.avatarUrl : `/api${listing.provider.avatarUrl}`} alt="" className="w-full h-full object-cover" />
+                            <img src={imgUrl(listing.provider.avatarUrl)} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full bg-secondary text-secondary-foreground flex items-center justify-center text-[8px] md:text-[10px] font-bold">
                               {listing.provider.name.slice(0, 2).toUpperCase()}

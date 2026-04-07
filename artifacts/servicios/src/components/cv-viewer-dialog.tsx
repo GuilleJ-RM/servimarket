@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, ExternalLink } from "lucide-react";
+import { imgUrl } from "@/lib/utils";
 
 interface CvViewerDialogProps {
   open: boolean;
@@ -9,12 +10,8 @@ interface CvViewerDialogProps {
   userName?: string;
 }
 
-function normalizeCvUrl(url: string) {
-  return url.startsWith("/api") ? url : `/api${url}`;
-}
-
 export function CvViewerDialog({ open, onOpenChange, cvUrl, userName }: CvViewerDialogProps) {
-  const normalizedUrl = normalizeCvUrl(cvUrl);
+  const normalizedUrl = imgUrl(cvUrl)!;
   const isPdf = normalizedUrl.toLowerCase().includes(".pdf");
 
   return (

@@ -5,7 +5,7 @@ import { db, usersTable } from "@workspace/db";
 import { eq, ilike } from "drizzle-orm";
 import { RegisterBody, LoginBody, ForgotPasswordBody, ResetPasswordBody, UpdateProfileBody } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
-import { sendEmail, buildPasswordResetEmail } from "../lib/email";
+import { sendEmail, buildPasswordResetEmail, buildEmailVerificationEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -20,6 +20,7 @@ function serializeUser(user: any) {
     locality: user.locality,
     whatsapp: user.whatsapp,
     notifyEmail: user.notifyEmail,
+    emailVerified: user.emailVerified,
     companyName: user.companyName,
     cuit: user.cuit,
     companyAddress: user.companyAddress,
@@ -74,6 +75,17 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   }
 
   const [user] = await db.insert(usersTable).values(insertData as any).returning();
+
+  // Send email verification
+  const verificationToken = crypto.randomBytes(32).toString("hex");
+  await db.update(usersTable).set({ verificationToken }).where(eq(usersTable.id, user.id));
+  const baseUrl = process.env.APP_URL || "http://localhost:5173";
+  const verifyUrl = `${baseUrl}/verificar-email?token=${verificationToken}&email=${encodeURIComponent(user.email)}`;
+  sendEmail(
+    user.email,
+    "Verificá tu email - Mil Laburos",
+    buildEmailVerificationEmail(user.name, verifyUrl),
+  ).catch(err => logger.error({ err }, "Failed to send verification email"));
 
   req.session = { userId: user.id };
   res.status(201).json({ user: serializeUser(user) });
@@ -166,6 +178,64 @@ router.patch("/auth/me", async (req, res): Promise<void> => {
   res.json(serializeUser(updated));
 });
 
+// ── Verify email ────────────────────────────────────────────────────
+router.post("/auth/verify-email", async (req, res): Promise<void> => {
+  const { email, token } = req.body;
+  if (!email || !token) {
+    res.status(400).json({ error: "Email y token son obligatorios" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(ilike(usersTable.email, email.toLowerCase()));
+  if (!user || user.verificationToken !== token) {
+    res.status(400).json({ error: "Token inválido o expirado" });
+    return;
+  }
+
+  await db.update(usersTable).set({
+    emailVerified: true,
+    verificationToken: null,
+  }).where(eq(usersTable.id, user.id));
+
+  logger.info({ userId: user.id }, "Email verified");
+  res.json({ success: true });
+});
+
+// ── Resend verification email ───────────────────────────────────────
+router.post("/auth/resend-verification", async (req, res): Promise<void> => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    res.status(401).json({ error: "No autenticado" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user) {
+    res.status(401).json({ error: "No autenticado" });
+    return;
+  }
+
+  if (user.emailVerified) {
+    res.json({ success: true });
+    return;
+  }
+
+  const verificationToken = crypto.randomBytes(32).toString("hex");
+  await db.update(usersTable).set({ verificationToken }).where(eq(usersTable.id, user.id));
+
+  const baseUrl = process.env.APP_URL || "http://localhost:5173";
+  const verifyUrl = `${baseUrl}/verificar-email?token=${verificationToken}&email=${encodeURIComponent(user.email)}`;
+
+  await sendEmail(
+    user.email,
+    "Verificá tu email - Mil Laburos",
+    buildEmailVerificationEmail(user.name, verifyUrl),
+  );
+
+  logger.info({ userId: user.id }, "Verification email resent");
+  res.json({ success: true });
+});
+
 // ── Forgot password ─────────────────────────────────────────────────
 router.post("/auth/forgot-password", async (req, res): Promise<void> => {
   const parsed = ForgotPasswordBody.safeParse(req.body);
@@ -197,7 +267,7 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
 
   await sendEmail(
     user.email,
-    "Restablecer contraseña - ServiMarket",
+    "Restablecer contraseña - Mil Laburos",
     buildPasswordResetEmail(user.name, resetUrl),
   );
 

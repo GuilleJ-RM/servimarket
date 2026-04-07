@@ -106,3 +106,4 @@ export * from "./uploadImageBody";
 export * from "./uploadImageResponse";
 export * from "./user";
 export * from "./userRole";
+export * from "./verifyEmailBody";

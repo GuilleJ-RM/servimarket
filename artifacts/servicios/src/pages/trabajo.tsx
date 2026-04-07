@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { imgUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, Link } from "wouter";
 import { MapPin, Building2, Clock, DollarSign, FileText, Send, CheckCircle2 } from "lucide-react";
@@ -103,7 +104,7 @@ export default function Trabajo() {
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                   {job.company?.avatarUrl ? (
-                    <img src={job.company.avatarUrl.startsWith("/api") ? job.company.avatarUrl : `/api${job.company.avatarUrl}`} alt="" className="w-full h-full rounded-lg object-cover" />
+                    <img src={imgUrl(job.company.avatarUrl)} alt="" className="w-full h-full rounded-lg object-cover" />
                   ) : (
                     <Building2 className="w-5 h-5 text-primary" />
                   )}

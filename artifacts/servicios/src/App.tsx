@@ -27,6 +27,8 @@ import PublicarTrabajo from "@/pages/publicar-trabajo";
 import MisTrabajos from "@/pages/mis-trabajos";
 import MisPostulaciones from "@/pages/mis-postulaciones";
 import BuscarCvs from "@/pages/buscar-cvs";
+import VerificarEmail from "@/pages/verificar-email";
+import Terminos from "@/pages/terminos";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +55,8 @@ function Router() {
       <Route path="/mis-trabajos" component={MisTrabajos} />
       <Route path="/mis-postulaciones" component={MisPostulaciones} />
       <Route path="/buscar-cvs" component={BuscarCvs} />
+      <Route path="/verificar-email" component={VerificarEmail} />
+      <Route path="/terminos" component={Terminos} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>

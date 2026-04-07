@@ -49,6 +49,7 @@ export const LoginResponse = zod.object({
     locality: zod.string().nullish(),
     whatsapp: zod.string().nullish(),
     notifyEmail: zod.boolean(),
+    emailVerified: zod.boolean(),
     companyName: zod.string().nullish(),
     cuit: zod.string().nullish(),
     companyAddress: zod.string().nullish(),
@@ -83,6 +84,7 @@ export const GetMeResponse = zod.object({
   locality: zod.string().nullish(),
   whatsapp: zod.string().nullish(),
   notifyEmail: zod.boolean(),
+  emailVerified: zod.boolean(),
   companyName: zod.string().nullish(),
   cuit: zod.string().nullish(),
   companyAddress: zod.string().nullish(),
@@ -127,6 +129,7 @@ export const UpdateProfileResponse = zod.object({
   locality: zod.string().nullish(),
   whatsapp: zod.string().nullish(),
   notifyEmail: zod.boolean(),
+  emailVerified: zod.boolean(),
   companyName: zod.string().nullish(),
   cuit: zod.string().nullish(),
   companyAddress: zod.string().nullish(),
@@ -161,6 +164,25 @@ export const ResetPasswordBody = zod.object({
 });
 
 export const ResetPasswordResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Verify email using token
+ */
+export const VerifyEmailBody = zod.object({
+  email: zod.string(),
+  token: zod.string(),
+});
+
+export const VerifyEmailResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Resend verification email
+ */
+export const ResendVerificationResponse = zod.object({
   success: zod.boolean(),
 });
 
@@ -228,6 +250,7 @@ export const GetListingsResponseItem = zod.object({
     locality: zod.string().nullish(),
     whatsapp: zod.string().nullish(),
     notifyEmail: zod.boolean(),
+    emailVerified: zod.boolean(),
     companyName: zod.string().nullish(),
     cuit: zod.string().nullish(),
     companyAddress: zod.string().nullish(),
@@ -326,6 +349,7 @@ export const GetListingResponse = zod.object({
     locality: zod.string().nullish(),
     whatsapp: zod.string().nullish(),
     notifyEmail: zod.boolean(),
+    emailVerified: zod.boolean(),
     companyName: zod.string().nullish(),
     cuit: zod.string().nullish(),
     companyAddress: zod.string().nullish(),
@@ -538,6 +562,7 @@ export const GetFeaturedListingsResponseItem = zod.object({
         locality: zod.string().nullish(),
         whatsapp: zod.string().nullish(),
         notifyEmail: zod.boolean(),
+        emailVerified: zod.boolean(),
         companyName: zod.string().nullish(),
         cuit: zod.string().nullish(),
         companyAddress: zod.string().nullish(),
@@ -583,6 +608,7 @@ export const GetConversationsResponseItem = zod.object({
     locality: zod.string().nullish(),
     whatsapp: zod.string().nullish(),
     notifyEmail: zod.boolean(),
+    emailVerified: zod.boolean(),
     companyName: zod.string().nullish(),
     cuit: zod.string().nullish(),
     companyAddress: zod.string().nullish(),
@@ -605,6 +631,7 @@ export const GetConversationsResponseItem = zod.object({
     locality: zod.string().nullish(),
     whatsapp: zod.string().nullish(),
     notifyEmail: zod.boolean(),
+    emailVerified: zod.boolean(),
     companyName: zod.string().nullish(),
     cuit: zod.string().nullish(),
     companyAddress: zod.string().nullish(),
@@ -658,6 +685,7 @@ export const GetConversationsResponseItem = zod.object({
         locality: zod.string().nullish(),
         whatsapp: zod.string().nullish(),
         notifyEmail: zod.boolean(),
+        emailVerified: zod.boolean(),
         companyName: zod.string().nullish(),
         cuit: zod.string().nullish(),
         companyAddress: zod.string().nullish(),
@@ -697,6 +725,7 @@ export const GetConversationsResponseItem = zod.object({
         locality: zod.string().nullish(),
         whatsapp: zod.string().nullish(),
         notifyEmail: zod.boolean(),
+        emailVerified: zod.boolean(),
         companyName: zod.string().nullish(),
         cuit: zod.string().nullish(),
         companyAddress: zod.string().nullish(),
@@ -747,6 +776,7 @@ export const GetMessagesResponseItem = zod.object({
     locality: zod.string().nullish(),
     whatsapp: zod.string().nullish(),
     notifyEmail: zod.boolean(),
+    emailVerified: zod.boolean(),
     companyName: zod.string().nullish(),
     cuit: zod.string().nullish(),
     companyAddress: zod.string().nullish(),
@@ -798,6 +828,7 @@ export const AdminGetUsersResponseItem = zod.object({
   locality: zod.string().nullish(),
   whatsapp: zod.string().nullish(),
   notifyEmail: zod.boolean(),
+  emailVerified: zod.boolean(),
   companyName: zod.string().nullish(),
   cuit: zod.string().nullish(),
   companyAddress: zod.string().nullish(),
@@ -845,6 +876,7 @@ export const AdminUpdateUserResponse = zod.object({
   locality: zod.string().nullish(),
   whatsapp: zod.string().nullish(),
   notifyEmail: zod.boolean(),
+  emailVerified: zod.boolean(),
   companyName: zod.string().nullish(),
   cuit: zod.string().nullish(),
   companyAddress: zod.string().nullish(),
@@ -912,6 +944,7 @@ export const AdminGetListingsResponseItem = zod.object({
     locality: zod.string().nullish(),
     whatsapp: zod.string().nullish(),
     notifyEmail: zod.boolean(),
+    emailVerified: zod.boolean(),
     companyName: zod.string().nullish(),
     cuit: zod.string().nullish(),
     companyAddress: zod.string().nullish(),
@@ -1141,6 +1174,7 @@ export const GetMyBookingsResponseItem = zod.object({
     locality: zod.string().nullish(),
     whatsapp: zod.string().nullish(),
     notifyEmail: zod.boolean(),
+    emailVerified: zod.boolean(),
     companyName: zod.string().nullish(),
     cuit: zod.string().nullish(),
     companyAddress: zod.string().nullish(),
@@ -1163,6 +1197,7 @@ export const GetMyBookingsResponseItem = zod.object({
     locality: zod.string().nullish(),
     whatsapp: zod.string().nullish(),
     notifyEmail: zod.boolean(),
+    emailVerified: zod.boolean(),
     companyName: zod.string().nullish(),
     cuit: zod.string().nullish(),
     companyAddress: zod.string().nullish(),
@@ -1292,6 +1327,7 @@ export const GetListingReviewsResponseItem = zod.object({
     locality: zod.string().nullish(),
     whatsapp: zod.string().nullish(),
     notifyEmail: zod.boolean(),
+    emailVerified: zod.boolean(),
     companyName: zod.string().nullish(),
     cuit: zod.string().nullish(),
     companyAddress: zod.string().nullish(),

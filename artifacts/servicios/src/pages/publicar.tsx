@@ -25,6 +25,7 @@ import { Image as ImageIcon, Loader2, ArrowLeft, X, Plus, Trash2 } from "lucide-
 import { Label } from "@/components/ui/label";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
+import { imgUrl } from "@/lib/utils";
 
 const PAYMENT_METHODS = [
   { id: "efectivo", label: "Efectivo" },
@@ -379,7 +380,7 @@ export default function Publicar() {
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {images.map((url, index) => (
                     <div key={index} className="relative aspect-square rounded-lg overflow-hidden border group">
-                      <img src={url} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
+                      <img src={imgUrl(url)} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
                       {index === 0 && <Badge className="absolute top-1 left-1 text-[9px] px-1.5 py-0">Principal</Badge>}
                       <button type="button" onClick={() => removeImage(index)} className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <X className="w-3 h-3" />

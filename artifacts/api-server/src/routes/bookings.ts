@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import { db, bookingsTable, listingsTable, usersTable, conversationsTable, messagesTable } from "@workspace/db";
 import { eq, or, and, desc, inArray } from "drizzle-orm";
 import { CreateBookingBody, UpdateBookingStatusBody, UpdateBookingBody } from "@workspace/api-zod";
+import { sendEmail, buildNewBookingEmail } from "../lib/email";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -183,6 +185,23 @@ router.post("/bookings", async (req, res): Promise<void> => {
     });
   } catch (_err) {
     // Non-critical: don't fail the booking if message fails
+  }
+
+  // Email notification to provider
+  try {
+    const [provider] = await db.select().from(usersTable).where(eq(usersTable.id, listing.providerId));
+    const [client] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+    if (provider && client && provider.notifyEmail) {
+      const baseUrl = process.env.APP_URL || "http://localhost:5173";
+      const bookingUrl = `${baseUrl}/pedidos`;
+      sendEmail(
+        provider.email,
+        `Nuevo pedido de ${client.name} - Mil Laburos`,
+        buildNewBookingEmail(provider.name, client.name, listing.title, bookingUrl),
+      ).catch(err => logger.error({ err }, "Failed to send booking email notification"));
+    }
+  } catch (_err) {
+    // Non-critical
   }
 
   res.status(201).json({

@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout/layout";
 import { useAuth } from "@/lib/auth";
-import { useGetMyJobs, useGetJobApplications, useUpdateApplicationStatus, useDeleteJob, getGetMyJobsQueryKey, getGetJobApplicationsQueryKey, useGetJob } from "@workspace/api-client-react";
+import { useGetMyJobs, useGetJobApplications, useUpdateApplicationStatus, useDeleteJob, getGetMyJobsQueryKey, getGetJobApplicationsQueryKey, useGetJob, getGetJobQueryKey } from "@workspace/api-client-react";
 import type { JobPostingWithCompany, JobApplicationWithDetails } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Skeleton } from "@/components/ui/skeleton";
 import { CvViewerDialog } from "@/components/cv-viewer-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { imgUrl } from "@/lib/utils";
 
 const contractLabel: Record<string, string> = { full_time: "Tiempo completo", part_time: "Medio tiempo", freelance: "Freelance", pasantia: "Pasantía" };
 const modalityLabel: Record<string, string> = { presencial: "Presencial", remoto: "Remoto", hibrido: "Híbrido" };
@@ -41,7 +42,7 @@ export default function MisTrabajos() {
     selectedJobId!,
     { query: { queryKey: getGetJobApplicationsQueryKey(selectedJobId!), enabled: !!selectedJobId } }
   );
-  const { data: jobDetail } = useGetJob(selectedJobId!, { query: { enabled: !!selectedJobId } });
+  const { data: jobDetail } = useGetJob(selectedJobId!, { query: { queryKey: getGetJobQueryKey(selectedJobId!), enabled: !!selectedJobId } });
   const updateStatus = useUpdateApplicationStatus();
   const deleteJob = useDeleteJob();
 
@@ -232,7 +233,7 @@ export default function MisTrabajos() {
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-10 h-10 rounded-full bg-muted overflow-hidden flex-shrink-0">
                               {app.applicant.avatarUrl ? (
-                                <img src={app.applicant.avatarUrl.startsWith("/api") ? app.applicant.avatarUrl : `/api${app.applicant.avatarUrl}`} alt="" className="w-full h-full object-cover" />
+                                <img src={imgUrl(app.applicant.avatarUrl)} alt="" className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-xs font-bold bg-primary/10 text-primary">
                                   {app.applicant.name.slice(0, 2).toUpperCase()}

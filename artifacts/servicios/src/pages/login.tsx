@@ -9,7 +9,6 @@ import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { ShoppingBag } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
 const loginSchema = z.object({
@@ -40,7 +39,7 @@ export default function Login() {
         onSuccess: () => {
           toast({
             title: "Sesión iniciada",
-            description: "¡Bienvenido de nuevo a ServiMarket!",
+            description: "¡Bienvenido de nuevo a Mil Laburos!",
           });
           window.location.href = "/"; // Reload to get auth context to update
         },
@@ -59,9 +58,8 @@ export default function Login() {
     <div className="flex min-h-[100dvh] w-full items-center justify-center p-4 bg-muted/30">
       <div className="w-full max-w-md space-y-6">
         <div className="flex justify-center">
-          <Link href="/" className="flex items-center gap-2 text-2xl font-bold text-primary hover:opacity-90">
-            <ShoppingBag className="w-8 h-8" />
-            ServiMarket
+          <Link href="/" className="flex items-center hover:opacity-90">
+            <img src="/logo2.png" alt="Mil Laburos" className="h-20 w-auto" />
           </Link>
         </div>
         <Card className="border-2 shadow-lg">

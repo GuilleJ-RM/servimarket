@@ -74,6 +74,7 @@ export interface User {
   /** @nullable */
   whatsapp?: string | null;
   notifyEmail: boolean;
+  emailVerified: boolean;
   /** @nullable */
   companyName?: string | null;
   /** @nullable */
@@ -997,6 +998,11 @@ export interface CreateIndustryBody {
 export interface CheckAppliedResponse {
   applied: boolean;
 }
+
+export type VerifyEmailBody = {
+  email: string;
+  token: string;
+};
 
 export type GetListingsParams = {
   /**

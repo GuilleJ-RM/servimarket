@@ -21,6 +21,7 @@ export interface User {
   /** @nullable */
   whatsapp?: string | null;
   notifyEmail: boolean;
+  emailVerified: boolean;
   /** @nullable */
   companyName?: string | null;
   /** @nullable */

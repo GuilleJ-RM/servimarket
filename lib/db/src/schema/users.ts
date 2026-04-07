@@ -14,6 +14,8 @@ export const usersTable = pgTable("users", {
   whatsapp: text("whatsapp"),
   notifyEmail: boolean("notify_email").notNull().default(true),
   notifyWhatsapp: boolean("notify_whatsapp").notNull().default(false),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  verificationToken: text("verification_token"),
   resetTokenHash: text("reset_token_hash"),
   resetTokenExpiry: timestamp("reset_token_expiry", { withTimezone: true }),
   // Company fields (role = "company")

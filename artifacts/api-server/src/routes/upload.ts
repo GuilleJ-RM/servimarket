@@ -25,21 +25,27 @@ router.post("/upload/image", async (req, res): Promise<void> => {
   }
 
   const { base64, filename } = parsed.data;
-  const ext = path.extname(filename) || ".jpg";
+  const ext = path.extname(filename).toLowerCase() || ".jpg";
+  const ALLOWED_EXTS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".pdf"]);
+  if (!ALLOWED_EXTS.has(ext)) {
+    res.status(400).json({ error: "Tipo de archivo no permitido" });
+    return;
+  }
   const name = `${crypto.randomUUID()}${ext}`;
   const filePath = path.join(UPLOAD_DIR, name);
 
   const buffer = Buffer.from(base64, "base64");
   fs.writeFileSync(filePath, buffer);
 
-  const url = `/uploads/${name}`;
+  const url = `/api/uploads/${name}`;
   res.json({ url });
 });
 
 router.get("/uploads/:filename", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.filename) ? req.params.filename[0] : req.params.filename;
-  const filePath = path.join(UPLOAD_DIR, raw);
-  if (!fs.existsSync(filePath)) {
+  const safeName = path.basename(raw);
+  const filePath = path.join(UPLOAD_DIR, safeName);
+  if (!filePath.startsWith(UPLOAD_DIR) || !fs.existsSync(filePath)) {
     res.status(404).json({ error: "Archivo no encontrado" });
     return;
   }

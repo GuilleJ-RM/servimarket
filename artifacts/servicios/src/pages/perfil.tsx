@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { imgUrl } from "@/lib/utils";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -142,7 +143,7 @@ export default function Perfil() {
   };
 
   const initials = user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-  const displayAvatar = avatarPreview || (user.avatarUrl ? (user.avatarUrl.startsWith("/api") ? user.avatarUrl : `/api${user.avatarUrl}`) : undefined);
+  const displayAvatar = avatarPreview || (user.avatarUrl ? imgUrl(user.avatarUrl) : undefined);
 
   return (
     <Layout>
@@ -250,7 +251,7 @@ export default function Perfil() {
                     <FileText className="w-3 h-3" /> CV cargado
                   </Badge>
                   <Button variant="outline" size="sm" asChild>
-                    <a href={user.cvUrl.startsWith("/api") ? user.cvUrl : `/api${user.cvUrl}`} target="_blank" rel="noopener noreferrer">
+                    <a href={imgUrl(user.cvUrl)!} target="_blank" rel="noopener noreferrer">
                       Ver CV
                     </a>
                   </Button>

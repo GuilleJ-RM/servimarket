@@ -16,6 +16,7 @@ import { es } from "date-fns/locale";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { imgUrl } from "@/lib/utils";
 
 export default function Servicio() {
   const [, params] = useRoute("/servicio/:id");
@@ -101,7 +102,7 @@ export default function Servicio() {
   const handleWhatsApp = () => {
     if (listing?.whatsapp) {
       const formattedNumber = listing.whatsapp.replace(/\D/g, "");
-      const message = encodeURIComponent(`Hola, estoy interesado en tu publicación en ServiMarket: ${listing.title}`);
+      const message = encodeURIComponent(`Hola, estoy interesado en tu publicación en Mil Laburos: ${listing.title}`);
       window.open(`https://wa.me/${formattedNumber}?text=${message}`, "_blank");
     }
   };
@@ -217,9 +218,9 @@ export default function Servicio() {
           <div className="lg:col-span-2 space-y-8">
             {/* Image Gallery */}
             {(() => {
-              const allImages: string[] = (listing as any).images?.length > 0 
+              const allImages: string[] = ((listing as any).images?.length > 0 
                 ? (listing as any).images 
-                : listing.imageUrl ? [listing.imageUrl] : [];
+                : listing.imageUrl ? [listing.imageUrl] : []).map((u: string) => imgUrl(u)!);
               
               if (allImages.length === 0) return null;
               
@@ -528,7 +529,7 @@ export default function Servicio() {
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-16 h-16 rounded-full bg-primary/20 overflow-hidden flex-shrink-0 border-2 border-primary/20">
                     {listing.provider.avatarUrl ? (
-                      <img src={listing.provider.avatarUrl.startsWith("/api") ? listing.provider.avatarUrl : `/api${listing.provider.avatarUrl}`} alt="" className="w-full h-full object-cover" />
+                      <img src={imgUrl(listing.provider.avatarUrl)} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full text-primary flex items-center justify-center text-xl font-bold">
                         {listing.provider.name.slice(0, 2).toUpperCase()}

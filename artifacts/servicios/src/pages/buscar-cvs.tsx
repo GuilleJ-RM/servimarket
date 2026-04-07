@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, MapPin, FileText, User, Mail, Phone, Eye } from "lucide-react";
 import { useState } from "react";
 import { CvViewerDialog } from "@/components/cv-viewer-dialog";
+import { imgUrl } from "@/lib/utils";
 
 const ARGENTINA_PROVINCES = [
   "Buenos Aires", "CABA", "Catamarca", "Chaco", "Chubut", "Córdoba", "Corrientes",
@@ -125,7 +126,7 @@ export default function BuscarCvs() {
                 <CardContent className="p-5">
                   <div className="flex items-start gap-4 mb-4">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={cv.avatarUrl ?? undefined} />
+                      <AvatarImage src={cv.avatarUrl ? imgUrl(cv.avatarUrl) : undefined} />
                       <AvatarFallback><User className="w-5 h-5" /></AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">

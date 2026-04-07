@@ -347,7 +347,7 @@ router.post("/conversations/:id/messages", async (req, res): Promise<void> => {
     if (recipient.notifyEmail) {
       sendEmail(
         recipient.email,
-        `Nuevo mensaje de ${sender.name} - ServiMarket`,
+        `Nuevo mensaje de ${sender.name} - Mil Laburos`,
         buildNewMessageEmail(recipient.name, sender.name, parsed.data.content, chatUrl),
       ).catch(err => logger.error({ err }, "Failed to send message email notification"));
     }

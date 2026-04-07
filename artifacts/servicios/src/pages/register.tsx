@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ShoppingBag, User as UserIcon, Store, Building2 } from "lucide-react";
+import { User as UserIcon, Store, Building2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -95,7 +95,7 @@ export default function Register() {
         onSuccess: () => {
           toast({
             title: "Cuenta creada exitosamente",
-            description: "Bienvenido a ServiMarket",
+            description: "Bienvenido a Mil Laburos",
           });
           window.location.href = "/";
         },
@@ -114,9 +114,8 @@ export default function Register() {
     <div className="flex min-h-[100dvh] w-full items-center justify-center p-4 bg-muted/30 py-12">
       <div className="w-full max-w-lg space-y-6">
         <div className="flex justify-center">
-          <Link href="/" className="flex items-center gap-2 text-2xl font-bold text-primary hover:opacity-90">
-            <ShoppingBag className="w-8 h-8" />
-            ServiMarket
+          <Link href="/" className="flex items-center hover:opacity-90">
+            <img src="/logo2.png" alt="Mil Laburos" className="h-20 w-auto" />
           </Link>
         </div>
         <Card className="border-2 shadow-lg">
@@ -135,7 +134,7 @@ export default function Register() {
                   name="role"
                   render={({ field }) => (
                     <FormItem className="space-y-3">
-                      <FormLabel>¿Qué buscas en ServiMarket?</FormLabel>
+                      <FormLabel>¿Qué buscas en Mil Laburos?</FormLabel>
                       <FormControl>
                         <RadioGroup
                           onValueChange={field.onChange}

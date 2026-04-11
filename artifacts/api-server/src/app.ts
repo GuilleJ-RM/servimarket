@@ -13,8 +13,11 @@ declare global {
   }
 }
 
+
 const app: Express = express();
 app.disable("x-powered-by");
+// Confía en el proxy para que req.secure y las cookies 'secure' funcionen bien detrás de Nginx
+app.set("trust proxy", 1);
 
 app.use(
   pinoHttp({

@@ -1,6 +1,7 @@
 import { Layout } from "@/components/layout/layout";
 import { useAuth } from "@/lib/auth";
 import { useCreateJob, useGetIndustries } from "@workspace/api-client-react";
+import { useSEO } from "@/hooks/use-seo";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,6 +39,7 @@ const jobSchema = z.object({
 type JobFormValues = z.infer<typeof jobSchema>;
 
 export default function PublicarTrabajo() {
+  useSEO({ title: "Publicar Trabajo", noindex: true });
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();

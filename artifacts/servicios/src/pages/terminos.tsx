@@ -1,6 +1,13 @@
 import { Layout } from "@/components/layout/layout";
+import { useSEO } from "@/hooks/use-seo";
 
 export default function Terminos() {
+  useSEO({
+    title: "Terminos y Condiciones",
+    description: "Terminos y condiciones de uso de Mil Laburos. Politica de privacidad y condiciones del servicio.",
+    keywords: "terminos, condiciones, politica de privacidad, Mil Laburos",
+  });
+
   return (
     <Layout>
       <div className="bg-muted/30 py-5 md:py-8 border-b">

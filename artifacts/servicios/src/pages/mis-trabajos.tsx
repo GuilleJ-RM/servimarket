@@ -1,6 +1,7 @@
 import { Layout } from "@/components/layout/layout";
 import { useAuth } from "@/lib/auth";
 import { useGetMyJobs, useGetJobApplications, useUpdateApplicationStatus, useDeleteJob, getGetMyJobsQueryKey, getGetJobApplicationsQueryKey, useGetJob, getGetJobQueryKey } from "@workspace/api-client-react";
+import { useSEO } from "@/hooks/use-seo";
 import type { JobPostingWithCompany, JobApplicationWithDetails } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
 };
 
 export default function MisTrabajos() {
+  useSEO({ title: "Mis Trabajos Publicados", noindex: true });
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();

@@ -10,6 +10,7 @@ import supportRouter from "./support";
 import bookingsRouter from "./bookings";
 import reviewsRouter from "./reviews";
 import jobsRouter from "./jobs";
+import sitemapRouter from "./sitemap";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(supportRouter);
 router.use(bookingsRouter);
 router.use(reviewsRouter);
 router.use(jobsRouter);
+router.use(sitemapRouter);
 
 export default router;

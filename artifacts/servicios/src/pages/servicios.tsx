@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/sheet";
 import { ErrorState } from "@/components/ui/error-state";
 import { ARGENTINA_PROVINCES } from "@/lib/constants";
+import { useSEO } from "@/hooks/use-seo";
 
 export default function Servicios() {
   const { user } = useAuth();
@@ -62,6 +63,24 @@ export default function Servicios() {
   };
 
   const activeFiltersCount = [categoryId, type, locality].filter(Boolean).length;
+
+  const selectedCategory = categories?.find(c => c.id === categoryId);
+  useSEO({
+    title: debouncedSearch
+      ? `${debouncedSearch}${locality ? ` en ${locality}` : ""} - Servicios y Productos`
+      : selectedCategory
+        ? `${selectedCategory.name} - Servicios y Productos`
+        : "Servicios y Productos",
+    description: `Encontra ${debouncedSearch || "servicios y productos"}${locality ? " en " + locality : ""} en Mil Laburos. Profesionales verificados, precios transparentes.`,
+    keywords: `${debouncedSearch || "servicios, productos"}, ${selectedCategory?.name || ""}, ${locality || "Argentina"}, comprar, contratar, presupuesto, Mil Laburos`,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": `Servicios y Productos${debouncedSearch ? " - " + debouncedSearch : ""}`,
+      "url": `https://millaburos.com/servicios${searchString ? "?" + searchString : ""}`,
+      "description": `Listado de servicios y productos${debouncedSearch ? " relacionados con " + debouncedSearch : ""} en Mil Laburos.`,
+    },
+  });
 
   return (
     <Layout>

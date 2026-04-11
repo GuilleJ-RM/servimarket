@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth";
+import { useSEO } from "@/hooks/use-seo";
 
 const loginSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
@@ -23,6 +24,12 @@ export default function Login() {
   const { toast } = useToast();
   const loginMutation = useLogin();
   const { isLoading } = useAuth(); // Just to wait for auth check
+
+  useSEO({
+    title: "Iniciar Sesion",
+    description: "Inicia sesion en Mil Laburos para acceder a servicios, productos y empleos en Argentina.",
+    keywords: "iniciar sesion, login, acceder, Mil Laburos",
+  });
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),

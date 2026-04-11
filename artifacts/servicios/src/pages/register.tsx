@@ -13,6 +13,7 @@ import { User as UserIcon, Store, Building2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ARGENTINA_PROVINCES } from "@/lib/constants";
+import { useSEO } from "@/hooks/use-seo";
 
 const registerSchema = z.object({
   name: z.string().min(2, "El nombre es muy corto"),
@@ -43,6 +44,12 @@ export default function Register() {
   const { toast } = useToast();
   const registerMutation = useRegister();
   const { data: industries } = useGetIndustries();
+
+  useSEO({
+    title: "Registrarse",
+    description: "Registrate en Mil Laburos para ofrecer o encontrar servicios, productos y empleos en Argentina. Gratis para profesionales y clientes.",
+    keywords: "registrarse, crear cuenta, Mil Laburos, ofrecer servicios, buscar trabajo, publicar productos",
+  });
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),

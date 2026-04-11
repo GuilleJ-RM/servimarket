@@ -10,12 +10,15 @@ import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { imgUrl } from "@/lib/utils";
 import { ErrorState } from "@/components/ui/error-state";
+import { useSEO } from "@/hooks/use-seo";
 
 type FilterTab = "todos" | "no-leidos" | "clientes" | "profesionales" | "soporte";
 
 export default function Mensajes() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+
+  useSEO({ title: "Mensajes", noindex: true });
 
   if (!user) {
     setLocation("/login");

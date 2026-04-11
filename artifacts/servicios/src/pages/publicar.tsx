@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useSEO } from "@/hooks/use-seo";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { 
   useGetCategories, 
@@ -64,6 +65,7 @@ type ListingFormValues = z.infer<typeof listingSchema>;
 type Variant = { name: string; price: number; stock: number | null };
 
 export default function Publicar() {
+  useSEO({ title: "Publicar Servicio o Producto", noindex: true });
   const { user, isProvider } = useAuth();
   const [, setLocation] = useLocation();
   const searchString = useSearch();

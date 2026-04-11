@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+Allow: /servicios
+Allow: /trabajos
+Allow: /servicio/
+Allow: /trabajo/
+Disallow: /dashboard
+Disallow: /perfil
+Disallow: /publicar
+Disallow: /publicar-trabajo
+Disallow: /mis-publicaciones
+Disallow: /mis-trabajos
+Disallow: /mis-postulaciones
+Disallow: /buscar-cvs
+Disallow: /admin
+Disallow: /mensajes
+Disallow: /pedidos
+Disallow: /chat
+
+Sitemap: https://millaburos.com/api/sitemap.xml

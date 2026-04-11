@@ -1,6 +1,7 @@
 import { Layout } from "@/components/layout/layout";
 import { useAuth } from "@/lib/auth";
 import { useGetMyListings, useUpdateListing, useDeleteListing, getGetMyListingsQueryKey } from "@workspace/api-client-react";
+import { useSEO } from "@/hooks/use-seo";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { PlusCircle, Edit, Trash2, Eye, ExternalLink, Package, ShoppingBag, Clock } from "lucide-react";
@@ -24,6 +25,7 @@ import {
 import { ErrorState } from "@/components/ui/error-state";
 
 export default function MisPublicaciones() {
+  useSEO({ title: "Mis Publicaciones", noindex: true });
   const { user, isProvider } = useAuth();
   const [, setLocation] = useLocation();
   const { data: listings, isLoading, isError } = useGetMyListings();

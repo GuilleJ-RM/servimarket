@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSEO } from "@/hooks/use-seo";
 import { useForgotPassword } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function OlvidePassword() {
+  useSEO({ title: "Recuperar Contrasena", noindex: true });
   const [sent, setSent] = useState(false);
   const forgotPassword = useForgotPassword();
 

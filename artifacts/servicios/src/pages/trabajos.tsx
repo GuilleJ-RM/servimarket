@@ -11,6 +11,7 @@ import { useState } from "react";
 import { imgUrl } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ErrorState } from "@/components/ui/error-state";
+import { useSEO } from "@/hooks/use-seo";
 
 const MODALITY_LABELS: Record<string, string> = {
   presencial: "Presencial",
@@ -32,6 +33,21 @@ export default function Trabajos() {
   const [localityQuery, setLocalityQuery] = useState("");
 
   const { data: jobs, isLoading, isError } = useGetJobs({ search: searchQuery || undefined, locality: localityQuery || undefined });
+
+  useSEO({
+    title: searchQuery
+      ? `${searchQuery}${localityQuery ? " en " + localityQuery : ""} - Empleos y Trabajos`
+      : "Empleos y Bolsa de Trabajo",
+    description: `Encontra empleos${searchQuery ? " de " + searchQuery : ""}${localityQuery ? " en " + localityQuery : ""} en Mil Laburos. Bolsa de trabajo con vacantes verificadas en Argentina.`,
+    keywords: `empleos, trabajos, bolsa de trabajo, vacantes, ${searchQuery || ""}, ${localityQuery || "Argentina"}, buscar empleo, ofertas de trabajo, postularse`,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": `Empleos y Trabajos${searchQuery ? " - " + searchQuery : ""}`,
+      "url": "https://millaburos.com/trabajos",
+      "description": `Bolsa de trabajo con empleos${searchQuery ? " de " + searchQuery : ""} en Argentina.`,
+    },
+  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

@@ -8,12 +8,15 @@ import { Link, useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { imgUrl } from "@/lib/utils";
 import { ErrorState } from "@/components/ui/error-state";
+import { useSEO } from "@/hooks/use-seo";
 
 export default function Dashboard() {
   const { user, isProvider } = useAuth();
   const [, setLocation] = useLocation();
   const { data: listings, isLoading: loadingListings, isError: errorListings } = useGetMyListings();
   const { data: conversations, isLoading: loadingConversations, isError: errorConversations } = useGetConversations();
+
+  useSEO({ title: "Panel de Control", noindex: true });
 
   if (!user || !isProvider) {
     setLocation("/");

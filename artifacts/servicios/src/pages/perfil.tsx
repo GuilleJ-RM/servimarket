@@ -1,6 +1,7 @@
 import { Layout } from "@/components/layout/layout";
 import { useAuth } from "@/lib/auth";
 import { useUpdateProfile, useUploadImage, useGetCategories, getGetMeQueryKey } from "@workspace/api-client-react";
+import { useSEO } from "@/hooks/use-seo";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,6 +35,7 @@ const profileSchema = z.object({
 type ProfileForm = z.infer<typeof profileSchema>;
 
 export default function Perfil() {
+  useSEO({ title: "Mi Perfil", noindex: true });
   const { user, isCompany } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();

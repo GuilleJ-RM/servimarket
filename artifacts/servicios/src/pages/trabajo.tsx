@@ -12,11 +12,12 @@ import { imgUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, Link } from "wouter";
 import { MapPin, Building2, Clock, DollarSign, FileText, Send, CheckCircle2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQueryClient } from "@tanstack/react-query";
 import { ErrorState } from "@/components/ui/error-state";
+import { useSEO } from "@/hooks/use-seo";
 
 const MODALITY_LABELS: Record<string, string> = {
   presencial: "Presencial",
@@ -47,6 +48,40 @@ export default function Trabajo() {
   const [applied, setApplied] = useState(false);
 
   const alreadyApplied = applied || appliedCheck?.applied === true;
+
+  const seoJsonLd = useMemo(() => {
+    if (!job) return undefined;
+    return {
+      "@context": "https://schema.org",
+      "@type": "JobPosting",
+      "title": job.title,
+      "description": job.description?.substring(0, 500),
+      "url": `https://millaburos.com/trabajo/${job.id}`,
+      "datePosted": job.createdAt,
+      "hiringOrganization": {
+        "@type": "Organization",
+        "name": job.company?.companyName || job.company?.name || "Empresa",
+      },
+      "jobLocation": job.locality ? {
+        "@type": "Place",
+        "address": { "@type": "PostalAddress", "addressLocality": job.locality },
+      } : undefined,
+      "employmentType": job.contractType === "full_time" ? "FULL_TIME" : job.contractType === "part_time" ? "PART_TIME" : job.contractType === "freelance" ? "CONTRACTOR" : "INTERN",
+      "baseSalary": job.salaryMin ? {
+        "@type": "MonetaryAmount",
+        "currency": "ARS",
+        "value": { "@type": "QuantitativeValue", "minValue": job.salaryMin, "maxValue": job.salaryMax || job.salaryMin, "unitText": "MONTH" },
+      } : undefined,
+    };
+  }, [job]);
+
+  useSEO({
+    title: job ? `${job.title}${job.locality ? ` en ${job.locality}` : ""} - Empleo` : undefined,
+    description: job ? `Empleo: ${job.title}${job.company?.companyName ? ` en ${job.company.companyName}` : ""}${job.locality ? `, ${job.locality}` : ""}. ${job.description?.substring(0, 150) || ""}` : undefined,
+    keywords: job ? `empleo, trabajo, ${job.title}, ${job.locality || ""}, ${job.company?.companyName || ""}, bolsa de trabajo, vacante, postularse` : undefined,
+    ogType: "article",
+    jsonLd: seoJsonLd,
+  });
 
   const handleApply = () => {
     if (!job) return;

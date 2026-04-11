@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ErrorState } from "@/components/ui/error-state";
+import { useSEO } from "@/hooks/use-seo";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   pending: { label: "Pendiente", color: "bg-yellow-100 text-yellow-800", icon: <Clock className="w-3.5 h-3.5" /> },
@@ -38,6 +39,8 @@ export default function Pedidos() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { data: bookings, isLoading, isError } = useGetMyBookings();
+
+  useSEO({ title: "Mis Pedidos", noindex: true });
   const updateStatus = useUpdateBookingStatus();
   const createReview = useCreateReview();
   const updateBooking = useUpdateBooking();

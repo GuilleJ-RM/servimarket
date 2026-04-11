@@ -1,6 +1,7 @@
 import { Layout } from "@/components/layout/layout";
 import { useAuth } from "@/lib/auth";
 import { useGetMyApplications, getGetMyApplicationsQueryKey } from "@workspace/api-client-react";
+import { useSEO } from "@/hooks/use-seo";
 import type { JobApplicationWithJob } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
 };
 
 export default function MisPostulaciones() {
+  useSEO({ title: "Mis Postulaciones", noindex: true });
   const { user } = useAuth();
   const { data: applications, isLoading, isError } = useGetMyApplications({ query: { queryKey: getGetMyApplicationsQueryKey(), enabled: !!user } });
 

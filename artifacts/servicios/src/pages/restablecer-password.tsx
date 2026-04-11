@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSEO } from "@/hooks/use-seo";
 import { useResetPassword } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function RestablecerPassword() {
+  useSEO({ title: "Restablecer Contrasena", noindex: true });
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const { toast } = useToast();

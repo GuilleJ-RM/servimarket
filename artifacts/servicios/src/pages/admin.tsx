@@ -1,6 +1,7 @@
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
 import { Layout } from "@/components/layout/layout";
+import { useSEO } from "@/hooks/use-seo";
 import {
   useAdminGetStats,
   useAdminGetUsers,
@@ -86,6 +87,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { ARGENTINA_PROVINCES } from "@/lib/constants";
 
 export default function Admin() {
+  useSEO({ title: "Administracion", noindex: true });
   const { user, isAdmin } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();

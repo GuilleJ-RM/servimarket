@@ -13,11 +13,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { imgUrl } from "@/lib/utils";
 import { ErrorState } from "@/components/ui/error-state";
+import { useSEO } from "@/hooks/use-seo";
 
 export default function Servicio() {
   const [, params] = useRoute("/servicio/:id");
@@ -62,6 +63,41 @@ export default function Servicio() {
   const averageRating = reviews && reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : null;
+
+  const seoJsonLd = useMemo(() => {
+    if (!listing) return undefined;
+    const ld: Record<string, unknown> = {
+      "@context": "https://schema.org",
+      "@type": listing.type === "product" ? "Product" : "Service",
+      "name": listing.title,
+      "description": listing.description?.substring(0, 300),
+      "url": `https://millaburos.com/servicio/${listing.id}`,
+      "provider": {
+        "@type": "Person",
+        "name": listing.provider?.name,
+        "address": listing.provider?.locality ? { "@type": "PostalAddress", "addressLocality": listing.provider.locality } : undefined,
+      },
+      "category": listing.category?.name,
+    };
+    if (listing.imageUrl) ld.image = `https://millaburos.com${listing.imageUrl}`;
+    if (listing.price && Number(listing.price) > 0) {
+      ld.offers = { "@type": "Offer", "price": listing.price, "priceCurrency": "ARS", "availability": "https://schema.org/InStock" };
+    }
+    if (averageRating) {
+      ld.aggregateRating = { "@type": "AggregateRating", "ratingValue": averageRating, "reviewCount": reviews?.length };
+    }
+    return ld;
+  }, [listing, averageRating, reviews]);
+
+  const providerLocality = listing?.provider?.locality || "";
+  useSEO({
+    title: listing ? `${listing.title}${providerLocality ? ` en ${providerLocality}` : ""}` : undefined,
+    description: listing ? `${listing.type === "service" ? "Servicio" : "Producto"}: ${listing.title}${providerLocality ? ` en ${providerLocality}` : ""}. ${listing.description?.substring(0, 160) || ""}` : undefined,
+    keywords: listing ? `${listing.title}, ${listing.category?.name || ""}, ${providerLocality}, ${listing.type === "service" ? "servicio, contratar, presupuesto" : "comprar, producto, precio"}` : undefined,
+    ogType: listing?.type === "product" ? "product" : "website",
+    ogImage: listing?.imageUrl ? `https://millaburos.com${listing.imageUrl}` : undefined,
+    jsonLd: seoJsonLd,
+  });
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (

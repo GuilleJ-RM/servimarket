@@ -10,12 +10,31 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { imgUrl } from "@/lib/utils";
 import { ErrorState } from "@/components/ui/error-state";
+import { useSEO } from "@/hooks/use-seo";
 
 export default function Home() {
   const { data: categories, isLoading: loadingCategories, isError: errorCategories } = useGetCategories();
   const { data: featuredListings, isLoading: loadingFeatured, isError: errorFeatured } = useGetFeaturedListings();
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
+
+  useSEO({
+    description: "Mil Laburos: encontra servicios profesionales, productos, empleos y oportunidades laborales cerca tuyo. Bolsa de trabajo, ofertas de empleo, freelancers y comercios locales en Argentina.",
+    keywords: "servicios, empleos, trabajos, bolsa de trabajo, empleo, freelance, productos, oportunidades laborales, buscar trabajo, oficios, profesionales, Argentina, Salta, contratar, presupuesto",
+    ogType: "website",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Mil Laburos",
+      "url": "https://millaburos.com",
+      "description": "Marketplace de servicios profesionales, productos, empleos y oportunidades laborales en Argentina.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://millaburos.com/servicios?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    },
+  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

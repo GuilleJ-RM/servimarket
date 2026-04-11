@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Layout } from "@/components/layout/layout";
 import { useVerifyEmail } from "@workspace/api-client-react";
+import { useSEO } from "@/hooks/use-seo";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
 export default function VerificarEmail() {
+  useSEO({ title: "Verificar Email", noindex: true });
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const verifyMutation = useVerifyEmail();
 

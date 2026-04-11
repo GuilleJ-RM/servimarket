@@ -1,6 +1,7 @@
 import { Layout } from "@/components/layout/layout";
 import { useAuth } from "@/lib/auth";
 import { useGetPublicCvs, useGetCategories } from "@workspace/api-client-react";
+import { useSEO } from "@/hooks/use-seo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { ARGENTINA_PROVINCES } from "@/lib/constants";
 
 export default function BuscarCvs() {
+  useSEO({ title: "Buscar CVs", noindex: true });
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [locality, setLocality] = useState("");

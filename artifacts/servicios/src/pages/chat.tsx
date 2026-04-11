@@ -1,5 +1,6 @@
 import { Layout } from "@/components/layout/layout";
 import { useAuth } from "@/lib/auth";
+import { useSEO } from "@/hooks/use-seo";
 import { 
   useGetMessages, 
   useSendMessage, 
@@ -19,6 +20,7 @@ import { es } from "date-fns/locale";
 import { ErrorState } from "@/components/ui/error-state";
 
 export default function Chat() {
+  useSEO({ title: "Chat", noindex: true });
   const [, params] = useRoute("/mensajes/:id");
   const conversationId = params?.id ? parseInt(params.id) : 0;
   const { user } = useAuth();

@@ -23,7 +23,10 @@ import {
   useAdminCreateIndustry,
   useAdminUpdateIndustry,
   useAdminDeleteIndustry,
+  getAdminGetStatsQueryKey,
+  getAdminGetUsersQueryKey,
   getAdminGetListingsQueryKey,
+  getAdminGetCompaniesQueryKey,
   getAdminGetJobsQueryKey,
   getGetIndustriesQueryKey,
 } from "@workspace/api-client-react";
@@ -93,9 +96,9 @@ export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: stats } = useAdminGetStats({ query: { enabled: !!user && isAdmin } });
-  const { data: users, isLoading: usersLoading, isError: usersError } = useAdminGetUsers({ query: { enabled: !!user && isAdmin } });
-  const { data: listings, isLoading: listingsLoading, isError: listingsError } = useAdminGetListings({ query: { enabled: !!user && isAdmin } });
+  const { data: stats } = useAdminGetStats({ query: { queryKey: getAdminGetStatsQueryKey(), enabled: !!user && isAdmin } });
+  const { data: users, isLoading: usersLoading, isError: usersError } = useAdminGetUsers({ query: { queryKey: getAdminGetUsersQueryKey(), enabled: !!user && isAdmin } });
+  const { data: listings, isLoading: listingsLoading, isError: listingsError } = useAdminGetListings({ query: { queryKey: getAdminGetListingsQueryKey(), enabled: !!user && isAdmin } });
   const { data: categories, isLoading: categoriesLoading } = useGetCategories();
 
   const deleteMutation = useAdminDeleteListing();
@@ -107,10 +110,10 @@ export default function Admin() {
   const deleteUserMutation = useAdminDeleteUser();
   const createConversation = useCreateConversation();
 
-  const { data: companies, isLoading: companiesLoading, isError: companiesError } = useAdminGetCompanies({ query: { enabled: !!user && isAdmin } });
+  const { data: companies, isLoading: companiesLoading, isError: companiesError } = useAdminGetCompanies({ query: { queryKey: getAdminGetCompaniesQueryKey(), enabled: !!user && isAdmin } });
   const approveCompanyMutation = useAdminApproveCompany();
 
-  const { data: jobs, isLoading: jobsLoading, isError: jobsError } = useAdminGetJobs({ query: { enabled: !!user && isAdmin } });
+  const { data: jobs, isLoading: jobsLoading, isError: jobsError } = useAdminGetJobs({ query: { queryKey: getAdminGetJobsQueryKey(), enabled: !!user && isAdmin } });
   const approveJobMutation = useAdminApproveJob();
 
   const { data: industries, isLoading: industriesLoading } = useGetIndustries();

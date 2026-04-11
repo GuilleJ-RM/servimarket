@@ -1,7 +1,8 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRegister, useGetIndustries } from "@workspace/api-client-react";
+import { useRegister, useGetIndustries, getGetMeQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useLocation } from "wouter";
@@ -44,6 +45,7 @@ export default function Register() {
   const { toast } = useToast();
   const registerMutation = useRegister();
   const { data: industries } = useGetIndustries();
+  const queryClient = useQueryClient();
 
   useSEO({
     title: "Registrarse",
@@ -78,7 +80,9 @@ export default function Register() {
             title: "Cuenta creada exitosamente",
             description: "Bienvenido a Mil Laburos",
           });
-          window.location.href = "/";
+          queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() }).then(() => {
+            setLocation("/");
+          });
         },
         onError: (error: any) => {
           toast({

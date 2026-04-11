@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useLogin } from "@workspace/api-client-react";
+import { useLogin, getGetMeQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth";
 import { useSEO } from "@/hooks/use-seo";
+import { useQueryClient } from "@tanstack/react-query";
 
 const loginSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
@@ -23,7 +24,8 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const loginMutation = useLogin();
-  const { isLoading } = useAuth(); // Just to wait for auth check
+  const { isLoading } = useAuth();
+  const queryClient = useQueryClient();
 
   useSEO({
     title: "Iniciar Sesion",
@@ -48,7 +50,9 @@ export default function Login() {
             title: "Sesión iniciada",
             description: "¡Bienvenido de nuevo a Mil Laburos!",
           });
-          window.location.href = "/"; // Reload to get auth context to update
+          queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() }).then(() => {
+            setLocation("/");
+          });
         },
         onError: (error: any) => {
           toast({

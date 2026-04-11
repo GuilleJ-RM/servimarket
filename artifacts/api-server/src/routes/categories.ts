@@ -4,7 +4,7 @@ import { db, categoriesTable } from "@workspace/db";
 const router: IRouter = Router();
 
 router.get("/categories", async (_req, res): Promise<void> => {
-  const categories = await db.select().from(categoriesTable).orderBy(categoriesTable.id);
+  const categories = await db.select().from(categoriesTable).orderBy(categoriesTable.id).limit(500);
   res.json(categories.map(c => ({
     id: c.id,
     name: c.name,

@@ -12,33 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { User as UserIcon, Store, Building2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const ARGENTINA_PROVINCES = [
-  "Buenos Aires",
-  "CABA",
-  "Catamarca",
-  "Chaco",
-  "Chubut",
-  "Córdoba",
-  "Corrientes",
-  "Entre Ríos",
-  "Formosa",
-  "Jujuy",
-  "La Pampa",
-  "La Rioja",
-  "Mendoza",
-  "Misiones",
-  "Neuquén",
-  "Río Negro",
-  "Salta",
-  "San Juan",
-  "San Luis",
-  "Santa Cruz",
-  "Santa Fe",
-  "Santiago del Estero",
-  "Tierra del Fuego",
-  "Tucumán",
-] as const;
+import { ARGENTINA_PROVINCES } from "@/lib/constants";
 
 const registerSchema = z.object({
   name: z.string().min(2, "El nombre es muy corto"),
@@ -58,8 +32,8 @@ const registerSchema = z.object({
   (data) => data.role !== "company" || (data.companyName && data.companyName.length > 0),
   { message: "El nombre de la empresa es obligatorio", path: ["companyName"] }
 ).refine(
-  (data) => data.role !== "company" || (data.cuit && data.cuit.length > 0),
-  { message: "El CUIT es obligatorio", path: ["cuit"] }
+  (data) => data.role !== "company" || (data.cuit && /^\d{2}-\d{8}-\d{1}$/.test(data.cuit || "")),
+  { message: "El CUIT debe tener formato XX-XXXXXXXX-X", path: ["cuit"] }
 );
 
 type RegisterFormValues = z.infer<typeof registerSchema>;

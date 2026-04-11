@@ -9,19 +9,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo } from "react";
 import { imgUrl } from "@/lib/utils";
+import { ErrorState } from "@/components/ui/error-state";
 
 type FilterTab = "todos" | "no-leidos" | "clientes" | "profesionales" | "soporte";
 
 export default function Mensajes() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+
+  if (!user) {
+    setLocation("/login");
+    return null;
+  }
+
+  return <MensajesContent user={user} />;
+}
+
+function MensajesContent({ user }: { user: NonNullable<ReturnType<typeof useAuth>["user"]> }) {
+  const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterTab>("todos");
   
-  const { data: conversations, isLoading } = useGetConversations({
+  const { data: conversations, isLoading, isError } = useGetConversations({
     query: {
       queryKey: getGetConversationsQueryKey(),
-      refetchInterval: 5000
+      refetchInterval: 5000,
+      refetchIntervalInBackground: false,
     }
   });
 
@@ -35,19 +48,19 @@ export default function Mensajes() {
       filtered = filtered.filter(c => c.unreadCount > 0);
     } else if (activeFilter === "clientes") {
       filtered = filtered.filter(c => {
-        const isProviderView = user!.id === c.providerId;
+        const isProviderView = user.id === c.providerId;
         const otherUser = isProviderView ? c.client : c.provider;
         return otherUser.role === "client";
       });
     } else if (activeFilter === "profesionales") {
       filtered = filtered.filter(c => {
-        const isProviderView = user!.id === c.providerId;
+        const isProviderView = user.id === c.providerId;
         const otherUser = isProviderView ? c.client : c.provider;
         return otherUser.role === "provider";
       });
     } else if (activeFilter === "soporte") {
       filtered = filtered.filter(c => {
-        const isProviderView = user!.id === c.providerId;
+        const isProviderView = user.id === c.providerId;
         const otherUser = isProviderView ? c.client : c.provider;
         return otherUser.role === "admin";
       });
@@ -57,7 +70,7 @@ export default function Mensajes() {
     if (search.trim()) {
       const q = search.toLowerCase();
       filtered = filtered.filter(c => {
-        const isProviderView = user!.id === c.providerId;
+        const isProviderView = user.id === c.providerId;
         const otherUser = isProviderView ? c.client : c.provider;
         return (
           otherUser.name.toLowerCase().includes(q) ||
@@ -80,11 +93,6 @@ export default function Mensajes() {
   }, [conversations, search, activeFilter, user]);
 
   const unreadTotal = conversations?.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0) ?? 0;
-
-  if (!user) {
-    setLocation("/login");
-    return null;
-  }
 
   const filters: { key: FilterTab; label: string; count?: number }[] = [
     { key: "todos", label: "Todos" },
@@ -152,7 +160,9 @@ export default function Mensajes() {
         </div>
 
         <div className="bg-card rounded-xl md:rounded-2xl border shadow-sm overflow-hidden flex flex-col min-h-[400px] md:min-h-[500px]">
-          {isLoading ? (
+          {isError ? (
+            <ErrorState message="No se pudieron cargar las conversaciones" />
+          ) : isLoading ? (
             <div className="p-3 md:p-4 space-y-3">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex gap-3 items-center">

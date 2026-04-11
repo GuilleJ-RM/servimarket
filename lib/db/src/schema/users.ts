@@ -29,6 +29,7 @@ export const usersTable = pgTable("users", {
   cvPublic: boolean("cv_public").notNull().default(false),
   cvCategories: jsonb("cv_categories").$type<number[] | "all">(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true });

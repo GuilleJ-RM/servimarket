@@ -5,14 +5,22 @@ import { CreateConversationBody, SendMessageBody } from "@workspace/api-zod";
 import { inArray } from "drizzle-orm";
 import { sendEmail, buildNewMessageEmail } from "../lib/email";
 import { logger } from "../lib/logger";
+import rateLimit from "express-rate-limit";
 
 const router: IRouter = Router();
+
+const messageLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: "Demasiados mensajes enviados, esperá un momento" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 function formatUser(u: typeof usersTable.$inferSelect) {
   return {
     id: u.id,
     name: u.name,
-    email: u.email,
     role: u.role,
     phone: u.phone,
     avatarUrl: u.avatarUrl,
@@ -33,7 +41,8 @@ router.get("/conversations", async (req, res): Promise<void> => {
     .select()
     .from(conversationsTable)
     .where(or(eq(conversationsTable.clientId, userId), eq(conversationsTable.providerId, userId)))
-    .orderBy(desc(conversationsTable.createdAt));
+    .orderBy(desc(conversationsTable.createdAt))
+    .limit(100);
 
   if (convs.length === 0) {
     res.json([]);
@@ -92,22 +101,54 @@ router.get("/conversations", async (req, res): Promise<void> => {
   }
 
   const result = [];
+
+  // Batch: get last message per conversation and unread counts
+  const convIds = convs.map(c => c.id);
+  let lastMessageMap: Record<number, typeof messagesTable.$inferSelect> = {};
+  let unreadCountMap: Record<number, number> = {};
+
+  if (convIds.length > 0) {
+    // Get the max message ID per conversation (latest message)
+    const latestMsgIds = await db
+      .select({
+        conversationId: messagesTable.conversationId,
+        maxId: sql<number>`max(${messagesTable.id})`.as("max_id"),
+      })
+      .from(messagesTable)
+      .where(inArray(messagesTable.conversationId, convIds))
+      .groupBy(messagesTable.conversationId);
+
+    const msgIds = latestMsgIds.map(r => r.maxId).filter(Boolean);
+    if (msgIds.length > 0) {
+      const lastMsgs = await db.select().from(messagesTable).where(inArray(messagesTable.id, msgIds));
+      for (const m of lastMsgs) {
+        lastMessageMap[m.conversationId] = m;
+      }
+    }
+
+    // Batch unread counts: count unread messages not sent by current user per conversation
+    const unreadRows = await db
+      .select({
+        conversationId: messagesTable.conversationId,
+        cnt: sql<number>`count(*)`.as("cnt"),
+      })
+      .from(messagesTable)
+      .where(and(
+        inArray(messagesTable.conversationId, convIds),
+        eq(messagesTable.isRead, false),
+        sql`${messagesTable.senderId} != ${userId}`,
+      ))
+      .groupBy(messagesTable.conversationId);
+
+    for (const row of unreadRows) {
+      unreadCountMap[row.conversationId] = Number(row.cnt);
+    }
+  }
+
   for (const conv of convs) {
-    const lastMessages = await db
-      .select()
-      .from(messagesTable)
-      .where(eq(messagesTable.conversationId, conv.id))
-      .orderBy(desc(messagesTable.createdAt))
-      .limit(1);
+    const unreadCount = unreadCountMap[conv.id] ?? 0;
 
-    const unreadMessages = await db
-      .select()
-      .from(messagesTable)
-      .where(and(eq(messagesTable.conversationId, conv.id), eq(messagesTable.isRead, false)));
-
-    const unreadCount = unreadMessages.filter(m => m.senderId !== userId).length;
-
-    const lastMessage = lastMessages[0];
+    const lastMessage = lastMessageMap[conv.id];
     let lastMsgFormatted = undefined;
     if (lastMessage) {
       lastMsgFormatted = {
@@ -270,7 +311,8 @@ router.get("/conversations/:id/messages", async (req, res): Promise<void> => {
     .select()
     .from(messagesTable)
     .where(eq(messagesTable.conversationId, id))
-    .orderBy(messagesTable.createdAt);
+    .orderBy(messagesTable.createdAt)
+    .limit(500);
 
   // Mark messages as read (only for participants)
   if (isParticipant) {
@@ -298,7 +340,7 @@ router.get("/conversations/:id/messages", async (req, res): Promise<void> => {
   })));
 });
 
-router.post("/conversations/:id/messages", async (req, res): Promise<void> => {
+router.post("/conversations/:id/messages", messageLimiter, async (req, res): Promise<void> => {
   const userId = req.session?.userId;
   if (!userId) {
     res.status(401).json({ error: "No autenticado" });
@@ -324,6 +366,11 @@ router.post("/conversations/:id/messages", async (req, res): Promise<void> => {
   const parsed = SendMessageBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  if (parsed.data.content.length > 5000) {
+    res.status(400).json({ error: "El mensaje no puede superar 5000 caracteres" });
     return;
   }
 

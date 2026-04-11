@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import rateLimit from "express-rate-limit";
 import { db, usersTable } from "@workspace/db";
 import { eq, ilike } from "drizzle-orm";
 import { RegisterBody, LoginBody, ForgotPasswordBody, ResetPasswordBody, UpdateProfileBody } from "@workspace/api-zod";
@@ -8,6 +9,14 @@ import { logger } from "../lib/logger";
 import { sendEmail, buildPasswordResetEmail, buildEmailVerificationEmail } from "../lib/email";
 
 const router: IRouter = Router();
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  message: { error: "Demasiados intentos, intente de nuevo en 15 minutos" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 function serializeUser(user: any) {
   return {
@@ -33,7 +42,7 @@ function serializeUser(user: any) {
   };
 }
 
-router.post("/auth/register", async (req, res): Promise<void> => {
+router.post("/auth/register", authLimiter, async (req, res): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -43,9 +52,19 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   const { name, password, role, phone, locality } = parsed.data;
   const email = parsed.data.email.toLowerCase();
 
+  if (email.length > 254) {
+    res.status(400).json({ error: "El email no puede superar los 254 caracteres" });
+    return;
+  }
+
+  if (phone && (phone.length < 6 || phone.length > 20)) {
+    res.status(400).json({ error: "El teléfono debe tener entre 6 y 20 caracteres" });
+    return;
+  }
+
   const existing = await db.select().from(usersTable).where(ilike(usersTable.email, email));
   if (existing.length > 0) {
-    res.status(400).json({ error: "El email ya está registrado" });
+    res.status(400).json({ error: "No se pudo completar el registro. Si ya tenés cuenta, intentá iniciar sesión." });
     return;
   }
 
@@ -91,7 +110,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   res.status(201).json({ user: serializeUser(user) });
 });
 
-router.post("/auth/login", async (req, res): Promise<void> => {
+router.post("/auth/login", authLimiter, async (req, res): Promise<void> => {
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -100,15 +119,18 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 
   const email = parsed.data.email.toLowerCase();
   const { password } = parsed.data;
-  const [user] = await db.select().from(usersTable).where(ilike(usersTable.email, email));
 
-  if (!user) {
-    res.status(401).json({ error: "Credenciales incorrectas" });
+  if (email.length > 254) {
+    res.status(400).json({ error: "Email inválido" });
     return;
   }
 
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) {
+  const [user] = await db.select().from(usersTable).where(ilike(usersTable.email, email));
+
+  // Always run bcrypt.compare to prevent timing-based user enumeration
+  const dummyHash = "$2a$10$0000000000000000000000000000000000000000000000000000";
+  const valid = await bcrypt.compare(password, user?.passwordHash ?? dummyHash);
+  if (!user || !valid) {
     res.status(401).json({ error: "Credenciales incorrectas" });
     return;
   }
@@ -179,10 +201,14 @@ router.patch("/auth/me", async (req, res): Promise<void> => {
 });
 
 // ── Verify email ────────────────────────────────────────────────────
-router.post("/auth/verify-email", async (req, res): Promise<void> => {
+router.post("/auth/verify-email", authLimiter, async (req, res): Promise<void> => {
   const { email, token } = req.body;
-  if (!email || !token) {
+  if (!email || typeof email !== "string" || !token || typeof token !== "string") {
     res.status(400).json({ error: "Email y token son obligatorios" });
+    return;
+  }
+  if (email.length > 254 || token.length > 128) {
+    res.status(400).json({ error: "Datos inválidos" });
     return;
   }
 
@@ -202,7 +228,7 @@ router.post("/auth/verify-email", async (req, res): Promise<void> => {
 });
 
 // ── Resend verification email ───────────────────────────────────────
-router.post("/auth/resend-verification", async (req, res): Promise<void> => {
+router.post("/auth/resend-verification", authLimiter, async (req, res): Promise<void> => {
   const userId = req.session?.userId;
   if (!userId) {
     res.status(401).json({ error: "No autenticado" });
@@ -237,7 +263,7 @@ router.post("/auth/resend-verification", async (req, res): Promise<void> => {
 });
 
 // ── Forgot password ─────────────────────────────────────────────────
-router.post("/auth/forgot-password", async (req, res): Promise<void> => {
+router.post("/auth/forgot-password", authLimiter, async (req, res): Promise<void> => {
   const parsed = ForgotPasswordBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -276,18 +302,25 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
 });
 
 // ── Reset password ──────────────────────────────────────────────────
-router.post("/auth/reset-password", async (req, res): Promise<void> => {
+router.post("/auth/reset-password", authLimiter, async (req, res): Promise<void> => {
   const parsed = ResetPasswordBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
-  const { email, token, newPassword } = parsed.data;
+  const { token, newPassword } = parsed.data;
+  const email = parsed.data.email.toLowerCase();
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
-  if (!user || user.resetTokenHash !== tokenHash || !user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
+  const [user] = await db.select().from(usersTable).where(ilike(usersTable.email, email));
+  // Always perform timing-safe comparison to prevent timing-based enumeration
+  const dummyHash = "0".repeat(64);
+  const tokenMatch = crypto.timingSafeEqual(
+    Buffer.from(user?.resetTokenHash ?? dummyHash, "hex"),
+    Buffer.from(tokenHash, "hex")
+  );
+  if (!user || !user.resetTokenHash || !tokenMatch || !user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
     res.status(400).json({ error: "Token inválido o expirado" });
     return;
   }

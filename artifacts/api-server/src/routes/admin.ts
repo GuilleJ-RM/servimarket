@@ -1,9 +1,10 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, listingsTable, categoriesTable, conversationsTable, messagesTable, jobPostingsTable } from "@workspace/db";
-import { eq, count, and, inArray } from "drizzle-orm";
+import { eq, count, and, inArray, ilike } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { AdminCreateCategoryBody, AdminUpdateCategoryBody, AdminUpdateUserBody } from "@workspace/api-zod";
 import bcrypt from "bcryptjs";
+import { sendEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -24,7 +25,7 @@ async function requireAdmin(req: any, res: any, next: any): Promise<void> {
 
 // GET /admin/users - List all users
 router.get("/admin/users", requireAdmin, async (req, res): Promise<void> => {
-  const users = await db.select().from(usersTable);
+  const users = await db.select().from(usersTable).limit(500);
   res.json(
     users.map((u) => ({
       id: u.id,
@@ -61,12 +62,30 @@ router.patch("/admin/users/:id", requireAdmin, async (req, res): Promise<void> =
 
   const updates: Record<string, any> = {};
   if (parsed.data.name) updates.name = parsed.data.name;
-  if (parsed.data.email) updates.email = parsed.data.email;
+  if (parsed.data.email) {
+    const normalizedEmail = parsed.data.email.toLowerCase();
+    const [dup] = await db.select({ id: usersTable.id }).from(usersTable).where(ilike(usersTable.email, normalizedEmail));
+    if (dup && dup.id !== id) {
+      res.status(400).json({ error: "El email ya está en uso por otro usuario" });
+      return;
+    }
+    updates.email = normalizedEmail;
+  }
   if (parsed.data.role) updates.role = parsed.data.role;
   if (parsed.data.phone !== undefined) updates.phone = parsed.data.phone;
   if (parsed.data.locality !== undefined) updates.locality = parsed.data.locality;
   if (parsed.data.password) {
     updates.passwordHash = await bcrypt.hash(parsed.data.password, 10);
+    // Notify user that their password was changed by admin
+    sendEmail(
+      existing.email,
+      "Tu contrase\u00f1a fue actualizada - Mil Laburos",
+      `<div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
+        <h2 style="color: #E67E22;">Mil Laburos</h2>
+        <p>Hola <strong>${existing.name.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))}</strong>,</p>
+        <p>Un administrador ha actualizado tu contrase\u00f1a. Si no solicitaste este cambio, por favor contact\u00e1 a soporte de inmediato.</p>
+      </div>`,
+    ).catch(err => logger.error({ err }, "Failed to send password change notification"));
   }
 
   if (Object.keys(updates).length === 0) {
@@ -115,7 +134,7 @@ router.delete("/admin/users/:id", requireAdmin, async (req, res): Promise<void> 
 
 // GET /admin/listings - List all listings with provider info
 router.get("/admin/listings", requireAdmin, async (req, res): Promise<void> => {
-  const listings = await db.select().from(listingsTable);
+  const listings = await db.select().from(listingsTable).limit(500);
 
   if (listings.length === 0) {
     res.json([]);
@@ -223,7 +242,8 @@ router.get("/admin/jobs", requireAdmin, async (req, res): Promise<void> => {
     .select()
     .from(jobPostingsTable)
     .innerJoin(usersTable, eq(jobPostingsTable.companyId, usersTable.id))
-    .orderBy(jobPostingsTable.createdAt);
+    .orderBy(jobPostingsTable.createdAt)
+    .limit(500);
 
   res.json(jobs.map(row => ({
     ...row.job_postings,

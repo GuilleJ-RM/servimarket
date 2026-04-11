@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { imgUrl } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { ErrorState } from "@/components/ui/error-state";
 
 export default function Chat() {
   const [, params] = useRoute("/mensajes/:id");
@@ -26,14 +27,15 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Need to get conversation details to know who we're talking to and what listing it's about
-  const { data: conversations, isLoading: loadingConversations } = useGetConversations();
+  const { data: conversations, isLoading: loadingConversations, isError: errorConversations } = useGetConversations();
   const conversation = conversations?.find(c => c.id === conversationId);
 
-  const { data: messages, isLoading: loadingMessages } = useGetMessages(conversationId, {
+  const { data: messages, isLoading: loadingMessages, isError: errorMessages } = useGetMessages(conversationId, {
     query: {
       queryKey: getGetMessagesQueryKey(conversationId),
       enabled: !!conversationId,
       refetchInterval: 2000, // Poll every 2s for real-time feel
+      refetchIntervalInBackground: false,
     }
   });
 
@@ -65,6 +67,7 @@ export default function Chat() {
   };
 
   const isLoading = loadingConversations || loadingMessages;
+  const isError = errorConversations || errorMessages;
   const isProviderView = conversation ? user.id === conversation.providerId : false;
   const otherUser = conversation ? (isProviderView ? conversation.client : conversation.provider) : null;
   const isAdminChat = otherUser?.role === "admin";
@@ -121,7 +124,9 @@ export default function Chat() {
 
         {/* Chat Messages */}
         <div className="flex-1 bg-muted/10 border-x overflow-y-auto px-3 py-3 md:p-4 space-y-3 relative">
-          {isLoading ? (
+          {isError ? (
+            <ErrorState message="No se pudo cargar la conversación" />
+          ) : isLoading ? (
             <div className="space-y-3">
               <Skeleton className="h-14 w-2/3 ml-auto rounded-2xl rounded-tr-none" />
               <Skeleton className="h-10 w-1/2 rounded-2xl rounded-tl-none" />

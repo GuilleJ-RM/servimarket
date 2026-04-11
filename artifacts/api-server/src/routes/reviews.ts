@@ -85,7 +85,8 @@ router.get("/listings/:id/reviews", async (req, res): Promise<void> => {
     .select()
     .from(reviewsTable)
     .where(eq(reviewsTable.listingId, id))
-    .orderBy(desc(reviewsTable.createdAt));
+    .orderBy(desc(reviewsTable.createdAt))
+    .limit(500);
 
   if (reviews.length === 0) {
     res.json([]);

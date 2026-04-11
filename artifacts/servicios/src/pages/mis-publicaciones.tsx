@@ -21,11 +21,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ErrorState } from "@/components/ui/error-state";
 
 export default function MisPublicaciones() {
   const { user, isProvider } = useAuth();
   const [, setLocation] = useLocation();
-  const { data: listings, isLoading } = useGetMyListings();
+  const { data: listings, isLoading, isError } = useGetMyListings();
   const updateListing = useUpdateListing();
   const deleteListing = useDeleteListing();
   const { toast } = useToast();
@@ -109,7 +110,9 @@ export default function MisPublicaciones() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {isLoading ? (
+        {isError ? (
+          <ErrorState message="No se pudieron cargar tus publicaciones" />
+        ) : isLoading ? (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-32 w-full rounded-2xl" />

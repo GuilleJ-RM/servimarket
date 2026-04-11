@@ -1,6 +1,31 @@
 import { Router, type IRouter } from "express";
+import rateLimit from "express-rate-limit";
 import { db, usersTable, jobPostingsTable, jobQuestionsTable, jobApplicationsTable, jobAnswersTable, industriesTable, categoriesTable } from "@workspace/db";
 import { eq, and, desc, ilike, or, inArray, isNotNull } from "drizzle-orm";
+
+const VALID_QUESTION_TYPES = ["text", "single_choice", "multiple_choice"] as const;
+
+function validateQuestions(questions: unknown[]): { valid: true; data: Array<{ questionText: string; questionType: string; options: string[] | null; required: boolean }> } | { valid: false } {
+  for (const q of questions) {
+    if (typeof q !== "object" || q === null) return { valid: false };
+    const obj = q as Record<string, unknown>;
+    if (typeof obj.questionText !== "string" || obj.questionText.length === 0 || obj.questionText.length > 500) return { valid: false };
+    if (obj.questionType !== undefined && !VALID_QUESTION_TYPES.includes(obj.questionType as any)) return { valid: false };
+    if (obj.options !== undefined && obj.options !== null) {
+      if (!Array.isArray(obj.options) || obj.options.length > 20) return { valid: false };
+      for (const o of obj.options) { if (typeof o !== "string" || o.length > 200) return { valid: false }; }
+    }
+  }
+  return {
+    valid: true,
+    data: (questions as any[]).map(q => ({
+      questionText: q.questionText,
+      questionType: q.questionType ?? "text",
+      options: q.options ?? null,
+      required: q.required ?? true,
+    })),
+  };
+}
 
 const router: IRouter = Router();
 
@@ -9,9 +34,27 @@ function getUserId(req: any): number | null {
   return req.session?.userId ?? null;
 }
 
+async function requireAdmin(req: any, res: any, next: any): Promise<void> {
+  const userId = req.session?.userId;
+  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user || user.role !== "admin") { res.status(403).json({ error: "No autorizado" }); return; }
+  next();
+}
+
+function escapeLike(s: string): string {
+  return s.replace(/[%_\\]/g, c => "\\" + c);
+}
+
 // ── GET /jobs — List active job postings ────────────────────────────
 router.get("/jobs", async (req, res): Promise<void> => {
   const { search, locality, industry } = req.query as Record<string, string | undefined>;
+
+  // Validate query param lengths
+  if ((search && search.length > 100) || (locality && locality.length > 100) || (industry && industry.length > 100)) {
+    res.status(400).json({ error: "Parámetros de búsqueda demasiado largos" });
+    return;
+  }
 
   const jobs = await db
     .select()
@@ -23,14 +66,15 @@ router.get("/jobs", async (req, res): Promise<void> => {
         eq(jobPostingsTable.adminApproved, true),
         eq(usersTable.companyApproved, true),
         search ? or(
-          ilike(jobPostingsTable.title, `%${search}%`),
-          ilike(jobPostingsTable.description, `%${search}%`)
+          ilike(jobPostingsTable.title, `%${escapeLike(search)}%`),
+          ilike(jobPostingsTable.description, `%${escapeLike(search)}%`)
         ) : undefined,
-        locality ? ilike(jobPostingsTable.locality, `%${locality}%`) : undefined,
-        industry ? ilike(jobPostingsTable.industry, `%${industry}%`) : undefined,
+        locality ? ilike(jobPostingsTable.locality, `%${escapeLike(locality)}%`) : undefined,
+        industry ? ilike(jobPostingsTable.industry, `%${escapeLike(industry)}%`) : undefined,
       )
     )
-    .orderBy(desc(jobPostingsTable.createdAt));
+    .orderBy(desc(jobPostingsTable.createdAt))
+    .limit(200);
 
   res.json(jobs.map(row => ({
     ...row.job_postings,
@@ -54,7 +98,8 @@ router.get("/jobs/my", async (req, res): Promise<void> => {
     .select()
     .from(jobPostingsTable)
     .where(eq(jobPostingsTable.companyId, userId))
-    .orderBy(desc(jobPostingsTable.createdAt));
+    .orderBy(desc(jobPostingsTable.createdAt))
+    .limit(200);
 
   res.json(jobs.map(j => ({ ...j, createdAt: j.createdAt.toISOString() })));
 });
@@ -70,7 +115,8 @@ router.get("/jobs/my-applications", async (req, res): Promise<void> => {
     .innerJoin(jobPostingsTable, eq(jobApplicationsTable.jobId, jobPostingsTable.id))
     .innerJoin(usersTable, eq(jobPostingsTable.companyId, usersTable.id))
     .where(eq(jobApplicationsTable.applicantId, userId))
-    .orderBy(desc(jobApplicationsTable.createdAt));
+    .orderBy(desc(jobApplicationsTable.createdAt))
+    .limit(200);
 
   res.json(applications.map(row => ({
     ...row.job_applications,
@@ -91,11 +137,20 @@ router.get("/jobs/my-applications", async (req, res): Promise<void> => {
 // ── GET /jobs/:id — Job detail with questions ───────────────────────
 router.get("/jobs/:id", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "ID inválido" });
+    return;
+  }
   const [job] = await db
     .select()
     .from(jobPostingsTable)
     .innerJoin(usersTable, eq(jobPostingsTable.companyId, usersTable.id))
-    .where(eq(jobPostingsTable.id, id));
+    .where(and(
+      eq(jobPostingsTable.id, id),
+      eq(jobPostingsTable.isActive, true),
+      eq(jobPostingsTable.adminApproved, true),
+      eq(usersTable.companyApproved, true),
+    ));
 
   if (!job) {
     res.status(404).json({ error: "Vacante no encontrada" });
@@ -140,40 +195,78 @@ router.post("/jobs", async (req, res): Promise<void> => {
 
   const { title, description, industry, locality, modality, contractType, salaryMin, salaryMax, requirements, benefits, questions } = req.body;
 
-  if (!title || !description) {
+  if (!title || typeof title !== "string" || !description || typeof description !== "string") {
     res.status(400).json({ error: "Título y descripción son obligatorios" });
     return;
   }
-
-  const [job] = await db.insert(jobPostingsTable).values({
-    companyId: userId,
-    title,
-    description,
-    industry: industry ?? null,
-    locality: locality ?? null,
-    modality: modality ?? "presencial",
-    contractType: contractType ?? "full_time",
-    salaryMin: salaryMin ?? null,
-    salaryMax: salaryMax ?? null,
-    requirements: requirements ?? null,
-    benefits: benefits ?? null,
-  }).returning();
-
-  // Insert questions if provided
-  if (questions && Array.isArray(questions) && questions.length > 0) {
-    await db.insert(jobQuestionsTable).values(
-      questions.map((q: any, i: number) => ({
-        jobId: job.id,
-        questionText: q.questionText,
-        questionType: q.questionType ?? "text",
-        options: q.options ?? null,
-        required: q.required ?? true,
-        sortOrder: i,
-      }))
-    );
+  if (title.length > 200) {
+    res.status(400).json({ error: "El título no puede superar 200 caracteres" });
+    return;
+  }
+  if (description.length > 5000) {
+    res.status(400).json({ error: "La descripción no puede superar 5000 caracteres" });
+    return;
   }
 
-  res.status(201).json({ ...job, createdAt: job.createdAt.toISOString() });
+  // Validate salary bounds
+  if (salaryMin !== undefined && salaryMin !== null && (typeof salaryMin !== "number" || salaryMin < 0 || salaryMin > 100000000)) {
+    res.status(400).json({ error: "Salario mínimo inválido" });
+    return;
+  }
+  if (salaryMax !== undefined && salaryMax !== null && (typeof salaryMax !== "number" || salaryMax < 0 || salaryMax > 100000000)) {
+    res.status(400).json({ error: "Salario máximo inválido" });
+    return;
+  }
+  if (salaryMin != null && salaryMax != null && salaryMax < salaryMin) {
+    res.status(400).json({ error: "El salario máximo no puede ser menor al mínimo" });
+    return;
+  }
+
+  // Validate questions before DB transaction
+  let parsedQuestions: ReturnType<typeof validateQuestions> | null = null;
+  if (questions && Array.isArray(questions) && questions.length > 0) {
+    if (questions.length > 20) {
+      res.status(400).json({ error: "Máximo 20 preguntas por vacante" });
+      return;
+    }
+    parsedQuestions = validateQuestions(questions);
+    if (!parsedQuestions.valid) {
+      res.status(400).json({ error: "Formato de preguntas inválido" });
+      return;
+    }
+  }
+
+  const result = await db.transaction(async (tx) => {
+    const [job] = await tx.insert(jobPostingsTable).values({
+      companyId: userId,
+      title,
+      description,
+      industry: industry ?? null,
+      locality: locality ?? null,
+      modality: modality ?? "presencial",
+      contractType: contractType ?? "full_time",
+      salaryMin: salaryMin ?? null,
+      salaryMax: salaryMax ?? null,
+      requirements: requirements ?? null,
+      benefits: benefits ?? null,
+    }).returning();
+
+    if (parsedQuestions && parsedQuestions.valid) {
+      await tx.insert(jobQuestionsTable).values(
+        parsedQuestions.data.map((q, i) => ({
+          jobId: job.id,
+          questionText: q.questionText,
+          questionType: q.questionType,
+          options: q.options,
+          required: q.required,
+          sortOrder: i,
+        }))
+      );
+    }
+    return job;
+  });
+
+  res.status(201).json({ ...result, createdAt: result.createdAt.toISOString() });
 });
 
 // ── PATCH /jobs/:id — Update job posting ────────────────────────────
@@ -182,6 +275,10 @@ router.patch("/jobs/:id", async (req, res): Promise<void> => {
   if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
 
   const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "ID inválido" });
+    return;
+  }
   const [existing] = await db.select().from(jobPostingsTable).where(eq(jobPostingsTable.id, id));
   if (!existing || existing.companyId !== userId) {
     res.status(403).json({ error: "No autorizado" });
@@ -191,8 +288,14 @@ router.patch("/jobs/:id", async (req, res): Promise<void> => {
   const { title, description, industry, locality, modality, contractType, salaryMin, salaryMax, requirements, benefits, isActive, questions } = req.body;
 
   const updates: Record<string, unknown> = {};
-  if (title !== undefined) updates.title = title;
-  if (description !== undefined) updates.description = description;
+  if (title !== undefined) {
+    if (typeof title !== "string" || title.length > 200) { res.status(400).json({ error: "Título inválido" }); return; }
+    updates.title = title;
+  }
+  if (description !== undefined) {
+    if (typeof description !== "string" || description.length > 5000) { res.status(400).json({ error: "Descripción inválida" }); return; }
+    updates.description = description;
+  }
   if (industry !== undefined) updates.industry = industry;
   if (locality !== undefined) updates.locality = locality;
   if (modality !== undefined) updates.modality = modality;
@@ -207,15 +310,24 @@ router.patch("/jobs/:id", async (req, res): Promise<void> => {
 
   // Replace questions if provided
   if (questions && Array.isArray(questions)) {
+    if (questions.length > 20) {
+      res.status(400).json({ error: "Máximo 20 preguntas por vacante" });
+      return;
+    }
     await db.delete(jobQuestionsTable).where(eq(jobQuestionsTable.jobId, id));
     if (questions.length > 0) {
+      const parsed = validateQuestions(questions);
+      if (!parsed.valid) {
+        res.status(400).json({ error: "Formato de preguntas inválido" });
+        return;
+      }
       await db.insert(jobQuestionsTable).values(
-        questions.map((q: any, i: number) => ({
+        parsed.data.map((q, i) => ({
           jobId: id,
           questionText: q.questionText,
-          questionType: q.questionType ?? "text",
-          options: q.options ?? null,
-          required: q.required ?? true,
+          questionType: q.questionType,
+          options: q.options,
+          required: q.required,
           sortOrder: i,
         }))
       );
@@ -231,6 +343,10 @@ router.delete("/jobs/:id", async (req, res): Promise<void> => {
   if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
 
   const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "ID inválido" });
+    return;
+  }
   const [existing] = await db.select().from(jobPostingsTable).where(eq(jobPostingsTable.id, id));
   if (!existing || existing.companyId !== userId) {
     res.status(403).json({ error: "No autorizado" });
@@ -247,6 +363,10 @@ router.post("/jobs/:id/apply", async (req, res): Promise<void> => {
   if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
 
   const jobId = Number(req.params.id);
+  if (isNaN(jobId)) {
+    res.status(400).json({ error: "ID inválido" });
+    return;
+  }
   const [job] = await db.select().from(jobPostingsTable).where(eq(jobPostingsTable.id, jobId));
   if (!job || !job.isActive) {
     res.status(404).json({ error: "Vacante no encontrada o cerrada" });
@@ -262,6 +382,37 @@ router.post("/jobs/:id/apply", async (req, res): Promise<void> => {
   }
 
   const { coverLetter, answers } = req.body;
+
+  if (coverLetter !== undefined && (typeof coverLetter !== "string" || coverLetter.length > 2000)) {
+    res.status(400).json({ error: "Carta de presentación demasiado larga (máx 2000)" });
+    return;
+  }
+
+  // Validate answers structure
+  if (answers !== undefined && answers !== null) {
+    if (!Array.isArray(answers) || answers.length > 20) {
+      res.status(400).json({ error: "Respuestas inválidas" });
+      return;
+    }
+    for (const a of answers) {
+      if (typeof a !== "object" || a === null) { res.status(400).json({ error: "Respuestas inválidas" }); return; }
+      if (typeof a.questionId !== "number") { res.status(400).json({ error: "Respuestas inválidas" }); return; }
+      if (a.answerText !== undefined && a.answerText !== null && (typeof a.answerText !== "string" || a.answerText.length > 2000)) {
+        res.status(400).json({ error: "Respuesta demasiado larga" });
+        return;
+      }
+    }
+
+    // Validate question IDs belong to this job
+    const jobQuestions = await db.select({ id: jobQuestionsTable.id }).from(jobQuestionsTable).where(eq(jobQuestionsTable.jobId, jobId));
+    const validQIds = new Set(jobQuestions.map(q => q.id));
+    for (const a of answers) {
+      if (!validQIds.has(a.questionId)) {
+        res.status(400).json({ error: "Pregunta inválida para esta vacante" });
+        return;
+      }
+    }
+  }
 
   const [application] = await db.insert(jobApplicationsTable).values({
     jobId,
@@ -289,6 +440,10 @@ router.get("/jobs/:id/applications", async (req, res): Promise<void> => {
   if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
 
   const jobId = Number(req.params.id);
+  if (isNaN(jobId)) {
+    res.status(400).json({ error: "ID inválido" });
+    return;
+  }
   const [job] = await db.select().from(jobPostingsTable).where(eq(jobPostingsTable.id, jobId));
   if (!job || job.companyId !== userId) {
     res.status(403).json({ error: "No autorizado" });
@@ -343,6 +498,10 @@ router.patch("/jobs/applications/:id/status", async (req, res): Promise<void> =>
   if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
 
   const appId = Number(req.params.id);
+  if (isNaN(appId)) {
+    res.status(400).json({ error: "ID inválido" });
+    return;
+  }
   const [application] = await db.select().from(jobApplicationsTable).where(eq(jobApplicationsTable.id, appId));
   if (!application) {
     res.status(404).json({ error: "Postulación no encontrada" });
@@ -366,7 +525,8 @@ router.patch("/jobs/applications/:id/status", async (req, res): Promise<void> =>
 });
 
 // ── GET /cvs/public — Companies view public CVs ────────────────────
-router.get("/cvs/public", async (req, res): Promise<void> => {
+const cvsLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 60, message: { error: "Demasiadas solicitudes, intente más tarde" } });
+router.get("/cvs/public", cvsLimiter, async (req, res): Promise<void> => {
   const userId = getUserId(req);
   if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
 
@@ -378,10 +538,14 @@ router.get("/cvs/public", async (req, res): Promise<void> => {
 
   const { search, locality, categoryId } = req.query as Record<string, string | undefined>;
 
+  if ((search && search.length > 100) || (locality && locality.length > 100)) {
+    res.status(400).json({ error: "Parámetros de búsqueda demasiado largos" });
+    return;
+  }
+
   const results = await db.select({
     id: usersTable.id,
     name: usersTable.name,
-    email: usersTable.email,
     phone: usersTable.phone,
     avatarUrl: usersTable.avatarUrl,
     locality: usersTable.locality,
@@ -392,10 +556,10 @@ router.get("/cvs/public", async (req, res): Promise<void> => {
     and(
       eq(usersTable.cvPublic, true),
       isNotNull(usersTable.cvUrl),
-      search ? or(ilike(usersTable.name, `%${search}%`), ilike(usersTable.email, `%${search}%`)) : undefined,
-      locality ? ilike(usersTable.locality, `%${locality}%`) : undefined,
+      search ? ilike(usersTable.name, `%${escapeLike(search)}%`) : undefined,
+      locality ? ilike(usersTable.locality, `%${escapeLike(locality)}%`) : undefined,
     )
-  ).orderBy(desc(usersTable.createdAt));
+  ).orderBy(desc(usersTable.createdAt)).limit(200);
 
   // Filter by category in application layer (jsonb filtering)
   let filtered = results;
@@ -413,19 +577,11 @@ router.get("/cvs/public", async (req, res): Promise<void> => {
 });
 
 // ── Admin: GET /admin/companies — List company accounts ─────────────
-router.get("/admin/companies", async (req, res): Promise<void> => {
-  const userId = getUserId(req);
-  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (!user || user.role !== "admin") {
-    res.status(403).json({ error: "No autorizado" });
-    return;
-  }
-
+router.get("/admin/companies", requireAdmin, async (req, res): Promise<void> => {
   const companies = await db.select().from(usersTable)
     .where(eq(usersTable.role, "company"))
-    .orderBy(desc(usersTable.createdAt));
+    .orderBy(desc(usersTable.createdAt))
+    .limit(500);
 
   res.json(companies.map(c => ({
     id: c.id,
@@ -442,16 +598,7 @@ router.get("/admin/companies", async (req, res): Promise<void> => {
 });
 
 // ── Admin: PATCH /admin/companies/:id/approve ───────────────────────
-router.patch("/admin/companies/:id/approve", async (req, res): Promise<void> => {
-  const userId = getUserId(req);
-  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (!user || user.role !== "admin") {
-    res.status(403).json({ error: "No autorizado" });
-    return;
-  }
-
+router.patch("/admin/companies/:id/approve", requireAdmin, async (req, res): Promise<void> => {
   const companyId = Number(req.params.id);
   const { approved } = req.body;
 
@@ -481,16 +628,7 @@ router.get("/jobs/:id/check-applied", async (req, res): Promise<void> => {
 });
 
 // ── Admin: GET /admin/jobs/:id — Job detail for admin ────────────────
-router.get("/admin/jobs/:id", async (req, res): Promise<void> => {
-  const userId = getUserId(req);
-  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (!user || user.role !== "admin") {
-    res.status(403).json({ error: "No autorizado" });
-    return;
-  }
-
+router.get("/admin/jobs/:id", requireAdmin, async (req, res): Promise<void> => {
   const id = Number(req.params.id);
   const [job] = await db
     .select()
@@ -529,21 +667,12 @@ router.get("/admin/jobs/:id", async (req, res): Promise<void> => {
 
 // ── GET /industries — List all industries ───────────────────────────
 router.get("/industries", async (_req, res): Promise<void> => {
-  const industries = await db.select().from(industriesTable).orderBy(industriesTable.name);
+  const industries = await db.select().from(industriesTable).orderBy(industriesTable.name).limit(200);
   res.json(industries);
 });
 
 // ── Admin: POST /admin/industries — Create industry ─────────────────
-router.post("/admin/industries", async (req, res): Promise<void> => {
-  const userId = getUserId(req);
-  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (!user || user.role !== "admin") {
-    res.status(403).json({ error: "No autorizado" });
-    return;
-  }
-
+router.post("/admin/industries", requireAdmin, async (req, res): Promise<void> => {
   const { name } = req.body;
   if (!name || !name.trim()) {
     res.status(400).json({ error: "El nombre es obligatorio" });
@@ -563,16 +692,7 @@ router.post("/admin/industries", async (req, res): Promise<void> => {
 });
 
 // ── Admin: PATCH /admin/industries/:id — Update industry ────────────
-router.patch("/admin/industries/:id", async (req, res): Promise<void> => {
-  const userId = getUserId(req);
-  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (!user || user.role !== "admin") {
-    res.status(403).json({ error: "No autorizado" });
-    return;
-  }
-
+router.patch("/admin/industries/:id", requireAdmin, async (req, res): Promise<void> => {
   const id = Number(req.params.id);
   const { name } = req.body;
   if (!name || !name.trim()) {
@@ -597,16 +717,7 @@ router.patch("/admin/industries/:id", async (req, res): Promise<void> => {
 });
 
 // ── Admin: DELETE /admin/industries/:id — Delete industry ───────────
-router.delete("/admin/industries/:id", async (req, res): Promise<void> => {
-  const userId = getUserId(req);
-  if (!userId) { res.status(401).json({ error: "No autenticado" }); return; }
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (!user || user.role !== "admin") {
-    res.status(403).json({ error: "No autorizado" });
-    return;
-  }
-
+router.delete("/admin/industries/:id", requireAdmin, async (req, res): Promise<void> => {
   const id = Number(req.params.id);
   const [deleted] = await db.delete(industriesTable).where(eq(industriesTable.id, id)).returning();
   if (!deleted) {

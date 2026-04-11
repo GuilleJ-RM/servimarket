@@ -8,17 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MapPin, FileText, User, Mail, Phone, Eye } from "lucide-react";
+import { Search, MapPin, FileText, User, Phone, Eye } from "lucide-react";
 import { useState } from "react";
 import { CvViewerDialog } from "@/components/cv-viewer-dialog";
 import { imgUrl } from "@/lib/utils";
-
-const ARGENTINA_PROVINCES = [
-  "Buenos Aires", "CABA", "Catamarca", "Chaco", "Chubut", "Córdoba", "Corrientes",
-  "Entre Ríos", "Formosa", "Jujuy", "La Pampa", "La Rioja", "Mendoza", "Misiones",
-  "Neuquén", "Río Negro", "Salta", "San Juan", "San Luis", "Santa Cruz",
-  "Santa Fe", "Santiago del Estero", "Tierra del Fuego", "Tucumán",
-] as const;
+import { ErrorState } from "@/components/ui/error-state";
+import { ARGENTINA_PROVINCES } from "@/lib/constants";
 
 export default function BuscarCvs() {
   const { user } = useAuth();
@@ -30,7 +25,7 @@ export default function BuscarCvs() {
   const [categoryQuery, setCategoryQuery] = useState<number | undefined>();
   const [viewingCv, setViewingCv] = useState<{ url: string; name: string } | null>(null);
 
-  const { data: cvs, isLoading } = useGetPublicCvs({
+  const { data: cvs, isLoading, isError } = useGetPublicCvs({
     search: searchQuery || undefined,
     locality: localityQuery || undefined,
     categoryId: categoryQuery ?? undefined,
@@ -107,7 +102,9 @@ export default function BuscarCvs() {
           </Button>
         </form>
 
-        {isLoading ? (
+        {isError ? (
+          <ErrorState message="No se pudieron cargar los CVs" />
+        ) : isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-48 rounded-xl" />
@@ -131,10 +128,12 @@ export default function BuscarCvs() {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate">{cv.name}</h3>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Mail className="w-3 h-3" />
-                        <span className="truncate">{cv.email}</span>
-                      </div>
+                      {cv.locality && (
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MapPin className="w-3 h-3" />
+                          <span className="truncate">{cv.locality}</span>
+                        </div>
+                      )}
                       {cv.phone && (
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Phone className="w-3 h-3" />

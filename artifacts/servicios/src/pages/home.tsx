@@ -9,10 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { imgUrl } from "@/lib/utils";
+import { ErrorState } from "@/components/ui/error-state";
 
 export default function Home() {
-  const { data: categories, isLoading: loadingCategories } = useGetCategories();
-  const { data: featuredListings, isLoading: loadingFeatured } = useGetFeaturedListings();
+  const { data: categories, isLoading: loadingCategories, isError: errorCategories } = useGetCategories();
+  const { data: featuredListings, isLoading: loadingFeatured, isError: errorFeatured } = useGetFeaturedListings();
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
 
@@ -77,7 +78,9 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-6 md:mb-10">Servicios y Productos Destacados</h2>
           
-          {loadingFeatured ? (
+          {errorFeatured ? (
+            <ErrorState message="No se pudieron cargar los servicios destacados" />
+          ) : loadingFeatured ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
               {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-[280px] md:h-[380px] rounded-xl" />
@@ -154,7 +157,9 @@ export default function Home() {
             </Button>
           </div>
 
-          {loadingCategories ? (
+          {errorCategories ? (
+            <ErrorState message="No se pudieron cargar las categorías" />
+          ) : loadingCategories ? (
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-24 md:h-32 rounded-xl" />

@@ -14,13 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { Plus, Trash2, Briefcase, HelpCircle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-
-const ARGENTINA_PROVINCES = [
-  "Buenos Aires", "CABA", "Catamarca", "Chaco", "Chubut", "Córdoba", "Corrientes",
-  "Entre Ríos", "Formosa", "Jujuy", "La Pampa", "La Rioja", "Mendoza", "Misiones",
-  "Neuquén", "Río Negro", "Salta", "San Juan", "San Luis", "Santa Cruz",
-  "Santa Fe", "Santiago del Estero", "Tierra del Fuego", "Tucumán",
-] as const;
+import { ARGENTINA_PROVINCES } from "@/lib/constants";
 
 const jobSchema = z.object({
   title: z.string().min(3, "Mínimo 3 caracteres"),

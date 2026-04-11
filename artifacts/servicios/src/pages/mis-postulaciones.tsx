@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClipboardList, Briefcase, MapPin, Building2 } from "lucide-react";
+import { ErrorState } from "@/components/ui/error-state";
 
 const contractLabel: Record<string, string> = { full_time: "Tiempo completo", part_time: "Medio tiempo", freelance: "Freelance", pasantia: "Pasantía" };
 const modalityLabel: Record<string, string> = { presencial: "Presencial", remoto: "Remoto", hibrido: "Híbrido" };
@@ -21,7 +22,7 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
 
 export default function MisPostulaciones() {
   const { user } = useAuth();
-  const { data: applications, isLoading } = useGetMyApplications({ query: { queryKey: getGetMyApplicationsQueryKey(), enabled: !!user } });
+  const { data: applications, isLoading, isError } = useGetMyApplications({ query: { queryKey: getGetMyApplicationsQueryKey(), enabled: !!user } });
 
   if (!user) {
     return (
@@ -42,7 +43,9 @@ export default function MisPostulaciones() {
           Mis postulaciones
         </h1>
 
-        {isLoading ? (
+        {isError ? (
+          <ErrorState message="No se pudieron cargar tus postulaciones" />
+        ) : isLoading ? (
           <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>
         ) : !applications?.length ? (
           <Card className="text-center py-12">

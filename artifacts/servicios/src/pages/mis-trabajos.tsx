@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CvViewerDialog } from "@/components/cv-viewer-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { imgUrl } from "@/lib/utils";
+import { ErrorState } from "@/components/ui/error-state";
 
 const contractLabel: Record<string, string> = { full_time: "Tiempo completo", part_time: "Medio tiempo", freelance: "Freelance", pasantia: "Pasantía" };
 const modalityLabel: Record<string, string> = { presencial: "Presencial", remoto: "Remoto", hibrido: "Híbrido" };
@@ -37,7 +38,7 @@ export default function MisTrabajos() {
   const [filterQuestionId, setFilterQuestionId] = useState<string>("");
   const [filterAnswer, setFilterAnswer] = useState<string>("");
 
-  const { data: jobs, isLoading } = useGetMyJobs({ query: { queryKey: getGetMyJobsQueryKey(), enabled: user?.role === "company" } });
+  const { data: jobs, isLoading, isError } = useGetMyJobs({ query: { queryKey: getGetMyJobsQueryKey(), enabled: user?.role === "company" } });
   const { data: applications, isLoading: appsLoading } = useGetJobApplications(
     selectedJobId!,
     { query: { queryKey: getGetJobApplicationsQueryKey(selectedJobId!), enabled: !!selectedJobId } }
@@ -109,7 +110,9 @@ export default function MisTrabajos() {
           </Button>
         </div>
 
-        {isLoading ? (
+        {isError ? (
+          <ErrorState message="No se pudieron cargar tus vacantes" />
+        ) : isLoading ? (
           <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
         ) : !jobs?.length ? (
           <Card className="text-center py-12">

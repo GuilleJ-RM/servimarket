@@ -1,11 +1,20 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, conversationsTable } from "@workspace/db";
 import { eq, and, or } from "drizzle-orm";
+import rateLimit from "express-rate-limit";
 
 const router: IRouter = Router();
 
+const supportLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: "Demasiados intentos, intente de nuevo en 15 minutos" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // POST /support/conversation - Create or get support conversation with admin
-router.post("/support/conversation", async (req, res): Promise<void> => {
+router.post("/support/conversation", supportLimiter, async (req, res): Promise<void> => {
   const userId = req.session?.userId;
   if (!userId) {
     res.status(401).json({ error: "No autenticado" });

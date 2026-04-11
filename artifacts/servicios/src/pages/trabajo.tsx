@@ -16,6 +16,7 @@ import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQueryClient } from "@tanstack/react-query";
+import { ErrorState } from "@/components/ui/error-state";
 
 const MODALITY_LABELS: Record<string, string> = {
   presencial: "Presencial",
@@ -32,7 +33,7 @@ const CONTRACT_LABELS: Record<string, string> = {
 
 export default function Trabajo() {
   const params = useParams<{ id: string }>();
-  const { data: job, isLoading } = useGetJob(Number(params.id));
+  const { data: job, isLoading, isError } = useGetJob(Number(params.id));
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -68,6 +69,16 @@ export default function Trabajo() {
       }
     );
   };
+
+  if (isError) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <ErrorState message="No se pudo cargar la vacante" />
+        </div>
+      </Layout>
+    );
+  }
 
   if (isLoading) {
     return (

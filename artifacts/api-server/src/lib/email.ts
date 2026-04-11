@@ -1,6 +1,10 @@
 import * as nodemailer from "nodemailer";
 import { logger } from "./logger";
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 let transporter: nodemailer.Transporter | null = null;
 
 function getTransporter(): nodemailer.Transporter | null {
@@ -49,7 +53,7 @@ export function buildPasswordResetEmail(name: string, resetUrl: string): string 
   return `
     <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
       <h2 style="color: #E67E22;">Mil Laburos</h2>
-      <p>Hola <strong>${name}</strong>,</p>
+      <p>Hola <strong>${escapeHtml(name)}</strong>,</p>
       <p>Recibimos una solicitud para restablecer tu contraseña.</p>
       <p>
         <a href="${resetUrl}" 
@@ -66,10 +70,10 @@ export function buildNewMessageEmail(recipientName: string, senderName: string, 
   return `
     <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
       <h2 style="color: #E67E22;">Mil Laburos</h2>
-      <p>Hola <strong>${recipientName}</strong>,</p>
-      <p><strong>${senderName}</strong> te envió un mensaje:</p>
+      <p>Hola <strong>${escapeHtml(recipientName)}</strong>,</p>
+      <p><strong>${escapeHtml(senderName)}</strong> te envió un mensaje:</p>
       <blockquote style="border-left: 3px solid #E67E22; padding-left: 12px; color: #555;">
-        ${messagePreview.length > 200 ? messagePreview.slice(0, 200) + "..." : messagePreview}
+        ${escapeHtml(messagePreview.length > 200 ? messagePreview.slice(0, 200) + "..." : messagePreview)}
       </blockquote>
       <p>
         <a href="${chatUrl}"
@@ -85,7 +89,7 @@ export function buildEmailVerificationEmail(name: string, verifyUrl: string): st
   return `
     <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
       <h2 style="color: #E67E22;">Mil Laburos</h2>
-      <p>Hola <strong>${name}</strong>,</p>
+      <p>Hola <strong>${escapeHtml(name)}</strong>,</p>
       <p>Gracias por registrarte en Mil Laburos. Por favor verificá tu email haciendo clic en el siguiente botón:</p>
       <p>
         <a href="${verifyUrl}"
@@ -102,10 +106,10 @@ export function buildNewBookingEmail(providerName: string, clientName: string, l
   return `
     <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
       <h2 style="color: #E67E22;">Mil Laburos</h2>
-      <p>Hola <strong>${providerName}</strong>,</p>
-      <p>¡Tenés un nuevo pedido! <strong>${clientName}</strong> solicitó tu publicación:</p>
+      <p>Hola <strong>${escapeHtml(providerName)}</strong>,</p>
+      <p>¡Tenés un nuevo pedido! <strong>${escapeHtml(clientName)}</strong> solicitó tu publicación:</p>
       <blockquote style="border-left: 3px solid #E67E22; padding-left: 12px; color: #555; font-weight: bold;">
-        ${listingTitle}
+        ${escapeHtml(listingTitle)}
       </blockquote>
       <p>
         <a href="${bookingUrl}"

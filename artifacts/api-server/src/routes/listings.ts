@@ -38,7 +38,6 @@ function formatListing(l: typeof listingsTable.$inferSelect, provider: typeof us
     provider: {
       id: provider.id,
       name: provider.name,
-      email: provider.email,
       role: provider.role,
       phone: provider.phone,
       avatarUrl: provider.avatarUrl,
@@ -62,7 +61,7 @@ router.get("/listings/my", async (req, res): Promise<void> => {
     return;
   }
 
-  const listings = await db.select().from(listingsTable).where(eq(listingsTable.providerId, userId)).orderBy(listingsTable.createdAt);
+  const listings = await db.select().from(listingsTable).where(eq(listingsTable.providerId, userId)).orderBy(listingsTable.createdAt).limit(200);
 
   if (listings.length === 0) {
     res.json([]);
@@ -108,7 +107,8 @@ router.get("/listings/featured", async (_req, res): Promise<void> => {
     .select()
     .from(listingsTable)
     .where(and(eq(listingsTable.isActive, true), eq(listingsTable.adminApproved, true)))
-    .orderBy(desc(listingsTable.createdAt));
+    .orderBy(desc(listingsTable.createdAt))
+    .limit(1000);
 
   if (allListings.length === 0) {
     res.json([]);
@@ -152,14 +152,20 @@ router.get("/listings", async (req, res): Promise<void> => {
   }
   const { categoryId, type, search, locality } = parsed.data;
 
+  if ((search && search.length > 100) || (locality && locality.length > 100)) {
+    res.status(400).json({ error: "Parámetros de búsqueda demasiado largos" });
+    return;
+  }
+
   const conditions = [eq(listingsTable.isActive, true), eq(listingsTable.adminApproved, true)];
   if (categoryId) conditions.push(eq(listingsTable.categoryId, categoryId));
   if (type) conditions.push(eq(listingsTable.type, type));
   if (search) {
+    const escaped = search.replace(/[%_\\]/g, (c: string) => "\\" + c);
     conditions.push(
       or(
-        ilike(listingsTable.title, `%${search}%`),
-        ilike(listingsTable.description, `%${search}%`)
+        ilike(listingsTable.title, `%${escaped}%`),
+        ilike(listingsTable.description, `%${escaped}%`)
       )!
     );
   }
@@ -170,7 +176,8 @@ router.get("/listings", async (req, res): Promise<void> => {
     .from(listingsTable)
     .innerJoin(usersTable, eq(listingsTable.providerId, usersTable.id))
     .where(and(...conditions, locality ? eq(usersTable.locality, locality) : undefined))
-    .orderBy(desc(listingsTable.createdAt));
+    .orderBy(desc(listingsTable.createdAt))
+    .limit(200);
 
   if (rows.length === 0) {
     res.json([]);
@@ -259,6 +266,22 @@ router.get("/listings/:id", async (req, res): Promise<void> => {
   if (!listing) {
     res.status(404).json({ error: "Publicación no encontrada" });
     return;
+  }
+
+  // Only the owner or admin can see inactive/unapproved listings
+  const userId = req.session?.userId;
+  if (!listing.isActive || !listing.adminApproved) {
+    if (!userId) {
+      res.status(404).json({ error: "Publicación no encontrada" });
+      return;
+    }
+    if (listing.providerId !== userId) {
+      const [viewer] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+      if (!viewer || viewer.role !== "admin") {
+        res.status(404).json({ error: "Publicación no encontrada" });
+        return;
+      }
+    }
   }
 
   const [provider] = await db.select().from(usersTable).where(eq(usersTable.id, listing.providerId));

@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ErrorState } from "@/components/ui/error-state";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   pending: { label: "Pendiente", color: "bg-yellow-100 text-yellow-800", icon: <Clock className="w-3.5 h-3.5" /> },
@@ -36,7 +37,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 export default function Pedidos() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
-  const { data: bookings, isLoading } = useGetMyBookings();
+  const { data: bookings, isLoading, isError } = useGetMyBookings();
   const updateStatus = useUpdateBookingStatus();
   const createReview = useCreateReview();
   const updateBooking = useUpdateBooking();
@@ -267,7 +268,9 @@ export default function Pedidos() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {isLoading ? (
+        {isError ? (
+          <ErrorState message="No se pudieron cargar tus pedidos" />
+        ) : isLoading ? (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-40 w-full rounded-2xl" />

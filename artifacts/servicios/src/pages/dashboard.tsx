@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { imgUrl } from "@/lib/utils";
+import { ErrorState } from "@/components/ui/error-state";
 
 export default function Dashboard() {
   const { user, isProvider } = useAuth();
   const [, setLocation] = useLocation();
-  const { data: listings, isLoading: loadingListings } = useGetMyListings();
-  const { data: conversations, isLoading: loadingConversations } = useGetConversations();
+  const { data: listings, isLoading: loadingListings, isError: errorListings } = useGetMyListings();
+  const { data: conversations, isLoading: loadingConversations, isError: errorConversations } = useGetConversations();
 
   if (!user || !isProvider) {
     setLocation("/");
@@ -47,7 +48,9 @@ export default function Dashboard() {
               <Package className="w-4 h-4 text-primary" />
             </CardHeader>
             <CardContent>
-              {loadingListings ? (
+              {errorListings ? (
+                <p className="text-sm text-destructive">Error</p>
+              ) : loadingListings ? (
                 <Skeleton className="h-8 w-16 mt-1" />
               ) : (
                 <>
@@ -64,7 +67,9 @@ export default function Dashboard() {
               <MessageSquare className="w-4 h-4 text-primary" />
             </CardHeader>
             <CardContent>
-              {loadingConversations ? (
+              {errorConversations ? (
+                <p className="text-sm text-destructive">Error</p>
+              ) : loadingConversations ? (
                 <Skeleton className="h-8 w-16 mt-1" />
               ) : (
                 <>
@@ -96,7 +101,9 @@ export default function Dashboard() {
               </Button>
             </CardHeader>
             <CardContent className="p-0">
-              {loadingListings ? (
+              {errorListings ? (
+                <div className="p-6"><ErrorState message="No se pudieron cargar las publicaciones" /></div>
+              ) : loadingListings ? (
                 <div className="p-6 space-y-4">
                   <Skeleton className="h-12 w-full" />
                   <Skeleton className="h-12 w-full" />
@@ -147,7 +154,9 @@ export default function Dashboard() {
               </Button>
             </CardHeader>
             <CardContent className="p-0">
-              {loadingConversations ? (
+              {errorConversations ? (
+                <div className="p-6"><ErrorState message="No se pudieron cargar las conversaciones" /></div>
+              ) : loadingConversations ? (
                 <div className="p-6 space-y-4">
                   <Skeleton className="h-16 w-full" />
                   <Skeleton className="h-16 w-full" />

@@ -26,33 +26,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-
-const ARGENTINA_PROVINCES = [
-  "Buenos Aires",
-  "CABA",
-  "Catamarca",
-  "Chaco",
-  "Chubut",
-  "Córdoba",
-  "Corrientes",
-  "Entre Ríos",
-  "Formosa",
-  "Jujuy",
-  "La Pampa",
-  "La Rioja",
-  "Mendoza",
-  "Misiones",
-  "Neuquén",
-  "Río Negro",
-  "Salta",
-  "San Juan",
-  "San Luis",
-  "Santa Cruz",
-  "Santa Fe",
-  "Santiago del Estero",
-  "Tierra del Fuego",
-  "Tucumán",
-];
+import { ErrorState } from "@/components/ui/error-state";
+import { ARGENTINA_PROVINCES } from "@/lib/constants";
 
 export default function Servicios() {
   const { user } = useAuth();
@@ -74,7 +49,7 @@ export default function Servicios() {
   // Filter categories based on selected type
   const filteredCategories = categories?.filter(c => !type || c.type === type);
   
-  const { data: listings, isLoading } = useGetListings({
+  const { data: listings, isLoading, isError } = useGetListings({
     search: debouncedSearch || undefined,
     categoryId: categoryId || undefined,
     type: type || undefined,
@@ -254,7 +229,9 @@ export default function Servicios() {
       </div>
 
       <div className="container mx-auto px-4 py-4 md:py-8">
-        {isLoading ? (
+        {isError ? (
+          <ErrorState message="No se pudieron cargar los servicios" />
+        ) : isLoading ? (
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-[220px] md:h-[320px] rounded-xl" />

@@ -1,11 +1,20 @@
 import { Router, type IRouter } from "express";
 import { db, bookingsTable, listingsTable, usersTable, conversationsTable, messagesTable } from "@workspace/db";
-import { eq, or, and, desc, inArray } from "drizzle-orm";
+import { eq, or, and, desc, inArray, sql } from "drizzle-orm";
+import rateLimit from "express-rate-limit";
 import { CreateBookingBody, UpdateBookingStatusBody, UpdateBookingBody } from "@workspace/api-zod";
 import { sendEmail, buildNewBookingEmail } from "../lib/email";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
+
+const bookingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: "Demasiadas solicitudes de reserva, intenta en unos minutos" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // GET /bookings - Get all bookings for the logged-in user (as client or provider)
 router.get("/bookings", async (req, res): Promise<void> => {
@@ -19,7 +28,8 @@ router.get("/bookings", async (req, res): Promise<void> => {
     .select()
     .from(bookingsTable)
     .where(or(eq(bookingsTable.clientId, userId), eq(bookingsTable.providerId, userId)))
-    .orderBy(desc(bookingsTable.createdAt));
+    .orderBy(desc(bookingsTable.createdAt))
+    .limit(200);
 
   if (bookings.length === 0) {
     res.json([]);
@@ -70,7 +80,6 @@ router.get("/bookings", async (req, res): Promise<void> => {
       client: client ? {
         id: client.id,
         name: client.name,
-        email: client.email,
         role: client.role,
         phone: client.phone,
         avatarUrl: client.avatarUrl,
@@ -80,7 +89,6 @@ router.get("/bookings", async (req, res): Promise<void> => {
       provider: provider ? {
         id: provider.id,
         name: provider.name,
-        email: provider.email,
         role: provider.role,
         phone: provider.phone,
         avatarUrl: provider.avatarUrl,
@@ -92,7 +100,7 @@ router.get("/bookings", async (req, res): Promise<void> => {
 });
 
 // POST /bookings - Create a new booking
-router.post("/bookings", async (req, res): Promise<void> => {
+router.post("/bookings", bookingLimiter, async (req, res): Promise<void> => {
   const userId = req.session?.userId;
   if (!userId) {
     res.status(401).json({ error: "No autenticado" });
@@ -102,6 +110,11 @@ router.post("/bookings", async (req, res): Promise<void> => {
   const parsed = CreateBookingBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  if (parsed.data.notes && parsed.data.notes.length > 500) {
+    res.status(400).json({ error: "Las notas no pueden superar los 500 caracteres" });
     return;
   }
 
@@ -126,21 +139,54 @@ router.post("/bookings", async (req, res): Promise<void> => {
 
   // For products, check stock
   const bookingQuantity = quantity ?? 1;
-  if (listing.type === "product" && listing.quantity !== null) {
-    if (bookingQuantity > listing.quantity) {
-      res.status(400).json({ error: `Solo hay ${listing.quantity} disponibles` });
-      return;
-    }
+  if (bookingQuantity < 1 || bookingQuantity > 999) {
+    res.status(400).json({ error: "La cantidad debe ser entre 1 y 999" });
+    return;
   }
 
-  const [booking] = await db.insert(bookingsTable).values({
-    listingId,
-    clientId: userId,
-    providerId: listing.providerId,
-    scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
-    notes: notes ?? null,
-    quantity: bookingQuantity,
-  }).returning();
+  // Use transaction to atomically check stock and create booking
+  let booking;
+  try {
+    booking = await db.transaction(async (tx) => {
+      // Re-read listing inside transaction for stock consistency
+      const [fresh] = await tx.select().from(listingsTable).where(eq(listingsTable.id, listingId));
+      if (!fresh || !fresh.isActive || fresh.status === "sold") {
+        throw new Error("LISTING_UNAVAILABLE");
+      }
+      if (fresh.type === "product" && fresh.quantity !== null) {
+        if (bookingQuantity > fresh.quantity) {
+          throw new Error("STOCK_EXCEEDED");
+        }
+        // Atomic decrement stock with WHERE guard against concurrent overcommit
+        const [updated] = await tx.update(listingsTable)
+          .set({ quantity: sql`${listingsTable.quantity} - ${bookingQuantity}` })
+          .where(and(eq(listingsTable.id, listingId), sql`${listingsTable.quantity} >= ${bookingQuantity}`))
+          .returning();
+        if (!updated) {
+          throw new Error("STOCK_EXCEEDED");
+        }
+      }
+      const [created] = await tx.insert(bookingsTable).values({
+        listingId,
+        clientId: userId,
+        providerId: fresh.providerId,
+        scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
+        notes: notes ?? null,
+        quantity: bookingQuantity,
+      }).returning();
+      return created;
+    });
+  } catch (err: any) {
+    if (err.message === "LISTING_UNAVAILABLE") {
+      res.status(400).json({ error: "Esta publicación ya no está disponible" });
+      return;
+    }
+    if (err.message === "STOCK_EXCEEDED") {
+      res.status(400).json({ error: "No hay suficiente stock disponible" });
+      return;
+    }
+    throw err;
+  }
 
   // Auto-send a web message with booking details
   try {
@@ -183,8 +229,8 @@ router.post("/bookings", async (req, res): Promise<void> => {
       senderId: userId,
       content: msgContent,
     });
-  } catch (_err) {
-    // Non-critical: don't fail the booking if message fails
+  } catch (err) {
+    logger.warn({ err }, "Failed to send auto-message for booking");
   }
 
   // Email notification to provider
@@ -200,8 +246,8 @@ router.post("/bookings", async (req, res): Promise<void> => {
         buildNewBookingEmail(provider.name, client.name, listing.title, bookingUrl),
       ).catch(err => logger.error({ err }, "Failed to send booking email notification"));
     }
-  } catch (_err) {
-    // Non-critical
+  } catch (err) {
+    logger.warn({ err }, "Failed to send booking email notification");
   }
 
   res.status(201).json({
@@ -281,16 +327,22 @@ router.patch("/bookings/:id/status", async (req, res): Promise<void> => {
     return;
   }
 
-  // For products: when delivered, reduce stock
+  // Stock already decremented at booking creation time — no further decrement needed
+  // For products: mark as sold if quantity is zero
   if (newStatus === "delivered" || newStatus === "completed") {
     const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.id, booking.listingId));
+    if (listing && listing.type === "product" && listing.quantity !== null && listing.quantity === 0) {
+      await db.update(listingsTable).set({ status: "sold" }).where(eq(listingsTable.id, listing.id));
+    }
+  }
+
+  // Refund stock on cancellation
+  if (newStatus === "cancelled") {
+    const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.id, booking.listingId));
     if (listing && listing.type === "product" && listing.quantity !== null) {
-      const newQuantity = Math.max(0, listing.quantity - booking.quantity);
-      const updateData: Record<string, unknown> = { quantity: newQuantity };
-      if (newQuantity === 0) {
-        updateData.status = "sold";
-      }
-      await db.update(listingsTable).set(updateData).where(eq(listingsTable.id, listing.id));
+      await db.update(listingsTable)
+        .set({ quantity: sql`${listingsTable.quantity} + ${booking.quantity}`, status: "active" })
+        .where(eq(listingsTable.id, listing.id));
     }
   }
 
@@ -351,6 +403,10 @@ router.patch("/bookings/:id", async (req, res): Promise<void> => {
     updateData.scheduledDate = parsed.data.scheduledDate ? new Date(parsed.data.scheduledDate) : null;
   }
   if (parsed.data.notes !== undefined) {
+    if (parsed.data.notes && parsed.data.notes.length > 500) {
+      res.status(400).json({ error: "Las notas no pueden superar los 500 caracteres" });
+      return;
+    }
     updateData.notes = parsed.data.notes;
   }
 

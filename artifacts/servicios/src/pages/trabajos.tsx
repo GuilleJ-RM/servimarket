@@ -10,6 +10,7 @@ import { Search, MapPin, Briefcase, Building2, Clock, DollarSign } from "lucide-
 import { useState } from "react";
 import { imgUrl } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ErrorState } from "@/components/ui/error-state";
 
 const MODALITY_LABELS: Record<string, string> = {
   presencial: "Presencial",
@@ -30,7 +31,7 @@ export default function Trabajos() {
   const [searchQuery, setSearchQuery] = useState("");
   const [localityQuery, setLocalityQuery] = useState("");
 
-  const { data: jobs, isLoading } = useGetJobs({ search: searchQuery || undefined, locality: localityQuery || undefined });
+  const { data: jobs, isLoading, isError } = useGetJobs({ search: searchQuery || undefined, locality: localityQuery || undefined });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +74,9 @@ export default function Trabajos() {
           <Button type="submit">Buscar</Button>
         </form>
 
-        {isLoading ? (
+        {isError ? (
+          <ErrorState message="No se pudieron cargar las vacantes" />
+        ) : isLoading ? (
           <div className="grid gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-40 rounded-xl" />

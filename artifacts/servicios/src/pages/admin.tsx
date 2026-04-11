@@ -82,14 +82,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-
-const ARGENTINA_PROVINCES = [
-  "Buenos Aires", "CABA", "Catamarca", "Chaco", "Chubut", "Córdoba",
-  "Corrientes", "Entre Ríos", "Formosa", "Jujuy", "La Pampa", "La Rioja",
-  "Mendoza", "Misiones", "Neuquén", "Río Negro", "Salta", "San Juan",
-  "San Luis", "Santa Cruz", "Santa Fe", "Santiago del Estero",
-  "Tierra del Fuego", "Tucumán",
-];
+import { ErrorState } from "@/components/ui/error-state";
+import { ARGENTINA_PROVINCES } from "@/lib/constants";
 
 export default function Admin() {
   const { user, isAdmin } = useAuth();
@@ -97,9 +91,9 @@ export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: stats } = useAdminGetStats();
-  const { data: users, isLoading: usersLoading } = useAdminGetUsers();
-  const { data: listings, isLoading: listingsLoading } = useAdminGetListings();
+  const { data: stats } = useAdminGetStats({ query: { enabled: !!user && isAdmin } });
+  const { data: users, isLoading: usersLoading, isError: usersError } = useAdminGetUsers({ query: { enabled: !!user && isAdmin } });
+  const { data: listings, isLoading: listingsLoading, isError: listingsError } = useAdminGetListings({ query: { enabled: !!user && isAdmin } });
   const { data: categories, isLoading: categoriesLoading } = useGetCategories();
 
   const deleteMutation = useAdminDeleteListing();
@@ -111,10 +105,10 @@ export default function Admin() {
   const deleteUserMutation = useAdminDeleteUser();
   const createConversation = useCreateConversation();
 
-  const { data: companies, isLoading: companiesLoading } = useAdminGetCompanies();
+  const { data: companies, isLoading: companiesLoading, isError: companiesError } = useAdminGetCompanies({ query: { enabled: !!user && isAdmin } });
   const approveCompanyMutation = useAdminApproveCompany();
 
-  const { data: jobs, isLoading: jobsLoading } = useAdminGetJobs();
+  const { data: jobs, isLoading: jobsLoading, isError: jobsError } = useAdminGetJobs({ query: { enabled: !!user && isAdmin } });
   const approveJobMutation = useAdminApproveJob();
 
   const { data: industries, isLoading: industriesLoading } = useGetIndustries();
@@ -509,7 +503,9 @@ export default function Admin() {
                 <CardTitle className="text-lg">Usuarios Registrados ({users?.length ?? 0})</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {usersLoading ? (
+                {usersError ? (
+                  <div className="p-6"><ErrorState message="No se pudieron cargar los usuarios" /></div>
+                ) : usersLoading ? (
                   <p className="text-muted-foreground p-6">Cargando...</p>
                 ) : !users?.length ? (
                   <p className="text-muted-foreground text-center p-8">No hay usuarios.</p>
@@ -545,7 +541,7 @@ export default function Admin() {
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditUser(u)} title="Editar">
                                     <Pencil className="h-3.5 w-3.5" />
                                   </Button>
-                                  {u.id !== user!.id && (
+                                  {u.id !== user?.id && (
                                     <>
                                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStartChat(u)} disabled={createConversation.isPending} title="Chat">
                                         <MessageSquare className="h-3.5 w-3.5" />
@@ -583,7 +579,7 @@ export default function Admin() {
                             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openEditUser(u)}>
                               <Pencil className="h-3 w-3 mr-1" /> Editar
                             </Button>
-                            {u.id !== user!.id && (
+                            {u.id !== user?.id && (
                               <>
                                 <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleStartChat(u)} disabled={createConversation.isPending}>
                                   <MessageSquare className="h-3 w-3 mr-1" /> Chat
@@ -610,7 +606,9 @@ export default function Admin() {
                 <CardTitle className="text-lg">Publicaciones ({listings?.length ?? 0})</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {listingsLoading ? (
+                {listingsError ? (
+                  <div className="p-6"><ErrorState message="No se pudieron cargar las publicaciones" /></div>
+                ) : listingsLoading ? (
                   <p className="text-muted-foreground p-6">Cargando...</p>
                 ) : !listings?.length ? (
                   <p className="text-muted-foreground text-center p-8">No hay publicaciones.</p>
@@ -820,7 +818,9 @@ export default function Admin() {
                 <CardTitle className="text-lg">Cuentas de Empresa ({companies?.length ?? 0})</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {companiesLoading ? (
+                {companiesError ? (
+                  <div className="p-6"><ErrorState message="No se pudieron cargar las empresas" /></div>
+                ) : companiesLoading ? (
                   <p className="text-muted-foreground p-6">Cargando...</p>
                 ) : !companies?.length ? (
                   <p className="text-muted-foreground text-center p-8">No hay empresas registradas.</p>
@@ -915,7 +915,9 @@ export default function Admin() {
                 <CardTitle className="text-lg">Vacantes ({jobs?.length ?? 0})</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {jobsLoading ? (
+                {jobsError ? (
+                  <div className="p-6"><ErrorState message="No se pudieron cargar las vacantes" /></div>
+                ) : jobsLoading ? (
                   <p className="text-muted-foreground p-6">Cargando...</p>
                 ) : !jobs?.length ? (
                   <p className="text-muted-foreground text-center p-8">No hay vacantes publicadas.</p>

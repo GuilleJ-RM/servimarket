@@ -94,6 +94,9 @@ export default function Perfil() {
         setAvatarPreview(null);
       }
     };
+    reader.onerror = () => {
+      toast({ title: "Error al leer el archivo", variant: "destructive" });
+    };
     reader.readAsDataURL(file);
   };
 
@@ -138,6 +141,9 @@ export default function Perfil() {
       } catch {
         toast({ title: "Error al subir el CV", variant: "destructive" });
       }
+    };
+    reader.onerror = () => {
+      toast({ title: "Error al leer el archivo", variant: "destructive" });
     };
     reader.readAsDataURL(file);
   };

@@ -17,6 +17,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { imgUrl } from "@/lib/utils";
+import { ErrorState } from "@/components/ui/error-state";
 
 export default function Servicio() {
   const [, params] = useRoute("/servicio/:id");
@@ -24,7 +25,7 @@ export default function Servicio() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  const { data: listing, isLoading } = useGetListing(listingId, {
+  const { data: listing, isLoading, isError } = useGetListing(listingId, {
     query: {
       enabled: !!listingId,
       queryKey: getGetListingQueryKey(listingId),
@@ -83,7 +84,7 @@ export default function Servicio() {
     }
 
     createConversation.mutate(
-      { data: { providerId: listing!.providerId, listingId } },
+      { data: { providerId: listing?.providerId ?? 0, listingId } },
       {
         onSuccess: (conv) => {
           setLocation(`/mensajes/${conv.id}`);
@@ -135,6 +136,16 @@ export default function Servicio() {
       }
     );
   };
+
+  if (isError) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <ErrorState message="No se pudo cargar el servicio" />
+        </div>
+      </Layout>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -268,7 +279,7 @@ export default function Servicio() {
                             index === currentImageIndex ? 'border-primary' : 'border-transparent hover:border-muted-foreground/30'
                           }`}
                         >
-                          <img src={url} alt="" className="w-full h-full object-cover" />
+                          <img src={url} alt={listing.title} className="w-full h-full object-cover" />
                         </button>
                       ))}
                     </div>
@@ -529,7 +540,7 @@ export default function Servicio() {
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-16 h-16 rounded-full bg-primary/20 overflow-hidden flex-shrink-0 border-2 border-primary/20">
                     {listing.provider.avatarUrl ? (
-                      <img src={imgUrl(listing.provider.avatarUrl)} alt="" className="w-full h-full object-cover" />
+                      <img src={imgUrl(listing.provider.avatarUrl)} alt={listing.provider.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full text-primary flex items-center justify-center text-xl font-bold">
                         {listing.provider.name.slice(0, 2).toUpperCase()}

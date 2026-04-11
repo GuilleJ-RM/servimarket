@@ -44,6 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       queryKey: getGetConversationsQueryKey(),
       enabled: !!user,
       refetchInterval: 10000, // Poll every 10s for badge updates
+      refetchIntervalInBackground: false,
     }
   });
   const totalUnread = conversations?.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0) ?? 0;
@@ -282,8 +283,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex flex-col items-center md:items-start gap-1">
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
                 <img src="/logo2.png" alt="Mil Laburos" className="h-10 w-auto" />
+                <span className="text-lg font-bold text-foreground">Mil Laburos</span>
               </div>
               <p className="text-xs text-muted-foreground">
                 Conectamos servicios y oportunidades.

@@ -14,6 +14,7 @@ declare global {
 }
 
 const app: Express = express();
+app.disable("x-powered-by");
 
 app.use(
   pinoHttp({
@@ -56,6 +57,16 @@ app.use("/api", router);
 
 // Global error handler — must be after all routes
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  // Handle JSON parse errors (invalid body)
+  if (err instanceof SyntaxError && "body" in err) {
+    res.status(400).json({ error: "JSON inválido" });
+    return;
+  }
+  // Handle payload too large
+  if (err && typeof err === "object" && "type" in err && (err as any).type === "entity.too.large") {
+    res.status(413).json({ error: "Payload demasiado grande" });
+    return;
+  }
   logger.error({ err }, "Unhandled error");
   res.status(500).json({ error: "Internal server error" });
 });

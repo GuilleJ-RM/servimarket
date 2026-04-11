@@ -52,8 +52,13 @@ router.post("/auth/register", authLimiter, async (req, res): Promise<void> => {
   const { name, password, role, phone, locality } = parsed.data;
   const email = parsed.data.email.toLowerCase();
 
-  if (email.length > 254) {
-    res.status(400).json({ error: "El email no puede superar los 254 caracteres" });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+    res.status(400).json({ error: "El email no es válido" });
+    return;
+  }
+
+  if (password.length < 6) {
+    res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres" });
     return;
   }
 

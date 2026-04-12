@@ -115,6 +115,7 @@ router.post("/auth/register", authLimiter, async (req, res): Promise<void> => {
   res.status(201).json({ user: serializeUser(user) });
 });
 
+
 router.post("/auth/login", authLimiter, async (req, res): Promise<void> => {
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
@@ -141,6 +142,14 @@ router.post("/auth/login", authLimiter, async (req, res): Promise<void> => {
   }
 
   req.session = { userId: user.id };
+  // Log para depuración de sesión y cookies
+  logger.info({
+    userId: user.id,
+    cookiesIn: req.headers.cookie,
+    session: req.session,
+    setCookieHeader: res.getHeader("Set-Cookie"),
+    env: process.env.NODE_ENV,
+  }, "Login exitoso, sesión creada y cookie enviada");
   res.json({ user: serializeUser(user) });
 });
 
@@ -149,7 +158,12 @@ router.post("/auth/logout", async (req, res): Promise<void> => {
   res.json({ success: true });
 });
 
+
 router.get("/auth/me", async (req, res): Promise<void> => {
+  logger.info({
+    cookiesIn: req.headers.cookie,
+    session: req.session,
+  }, "Consulta a /auth/me");
   const userId = req.session?.userId;
   if (!userId) {
     res.status(401).json({ error: "No autenticado" });

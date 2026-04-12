@@ -7,9 +7,11 @@
       "exec_mode": "fork",
       "env": {
         "NODE_ENV": "production",
-        "SESSION_SECRET": "pon-un-secreto-fuerte-aqui",
-        "ALLOWED_ORIGINS": "https://tu-dominio.com",
-        "APP_URL": "https://tu-dominio.com"
+        "SESSION_SECRET": "yNjEkQ8CYqf7ijninlRhdMr7ME4OQuuNC7X3BizMRh0=",
+        "ALLOWED_ORIGINS": "https://millaburos.com,https://www.millaburos.com",
+        "APP_URL": "https://millaburos.com",
+        "DATABASE_URL": "postgresql://servimarket_user:ServiMarket@208.109.33.128:5432/servimarket",
+        "PORT": "3001"
       },
       "env_production": {
         "NODE_ENV": "production"

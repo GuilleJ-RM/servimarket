@@ -105,6 +105,7 @@ router.post("/auth/register", authLimiter, async (req, res): Promise<void> => {
   await db.update(usersTable).set({ verificationToken }).where(eq(usersTable.id, user.id));
   const baseUrl = process.env.APP_URL || "http://localhost:5173";
   const verifyUrl = `${baseUrl}/verificar-email?token=${verificationToken}&email=${encodeURIComponent(user.email)}`;
+  logger.info({ to: user.email, subject: "Verificá tu email - Mil Laburos" }, "Intentando enviar email de verificación");
   sendEmail(
     user.email,
     "Verificá tu email - Mil Laburos",
@@ -271,6 +272,7 @@ router.post("/auth/resend-verification", authLimiter, async (req, res): Promise<
   const baseUrl = process.env.APP_URL || "http://localhost:5173";
   const verifyUrl = `${baseUrl}/verificar-email?token=${verificationToken}&email=${encodeURIComponent(user.email)}`;
 
+  logger.info({ to: user.email, subject: "Verificá tu email - Mil Laburos" }, "Intentando reenviar email de verificación");
   await sendEmail(
     user.email,
     "Verificá tu email - Mil Laburos",
@@ -310,6 +312,7 @@ router.post("/auth/forgot-password", authLimiter, async (req, res): Promise<void
   const baseUrl = process.env.APP_URL || "http://localhost:5173";
   const resetUrl = `${baseUrl}/restablecer-password?token=${token}&email=${encodeURIComponent(email)}`;
 
+  logger.info({ to: user.email, subject: "Restablecer contraseña - Mil Laburos" }, "Intentando enviar email de restablecimiento de contraseña");
   await sendEmail(
     user.email,
     "Restablecer contraseña - Mil Laburos",

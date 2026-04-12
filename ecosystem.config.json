@@ -11,7 +11,12 @@
         "ALLOWED_ORIGINS": "https://millaburos.com,https://www.millaburos.com",
         "APP_URL": "https://millaburos.com",
         "DATABASE_URL": "postgresql://servimarket_user:ServiMarket@208.109.33.128:5432/servimarket",
-        "PORT": "3001"
+        "PORT": "3001",
+        "SMTP_HOST": "smtp.sendgrid.net",
+        "SMTP_PORT": "587",
+        "SMTP_USER": "apikey",
+        "SMTP_PASS": "re_7oN6XeRd_Jy1ErxWAVFvxwebDRJhgT2VA",
+        "SMTP_FROM": "soporte@millaburos.com"
       },
       "env_production": {
         "NODE_ENV": "production"

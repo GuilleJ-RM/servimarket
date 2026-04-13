@@ -7,16 +7,13 @@
       "exec_mode": "fork",
       "env": {
         "NODE_ENV": "production",
-        "SESSION_SECRET": "yNjEkQ8CYqf7ijninlRhdMr7ME4OQuuNC7X3BizMRh0=",
-        "ALLOWED_ORIGINS": "https://millaburos.com,https://www.millaburos.com",
-        "APP_URL": "https://millaburos.com",
-        "DATABASE_URL": "postgresql://servimarket_user:ServiMarket@208.109.33.128:5432/servimarket",
-        "PORT": "3001",
-        "SMTP_HOST": "smtp.sendgrid.net",
-        "SMTP_PORT": "587",
-        "SMTP_USER": "apikey",
-        "SMTP_PASS": "re_7oN6XeRd_Jy1ErxWAVFvxwebDRJhgT2VA",
-        "SMTP_FROM": "soporte@millaburos.com"
+        "SESSION_SECRET": "<SESSION_SECRET>",
+        "ALLOWED_ORIGINS": "<ALLOWED_ORIGINS>",
+        "APP_URL": "<APP_URL>",
+        "DATABASE_URL": "<DATABASE_URL>",
+        "PORT": "<PORT>",
+        "RESEND_API_KEY": "<RESEND_API_KEY>",
+        "RESEND_FROM": "<RESEND_FROM>"
       },
       "env_production": {
         "NODE_ENV": "production"

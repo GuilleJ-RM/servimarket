@@ -1,53 +1,23 @@
-import * as nodemailer from "nodemailer";
 import { logger } from "./logger";
+import { sendEmail as sendResendEmail } from "./email-resend";
 
 function escapeHtml(str: string): string {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}
-
-let transporter: nodemailer.Transporter | null = null;
-
-function getTransporter(): nodemailer.Transporter | null {
-  if (transporter) return transporter;
-
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT || "587");
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (!host || !user || !pass) {
-    logger.warn("SMTP not configured — email sending disabled");
-    return null;
-  }
-
-  transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
-
-  return transporter;
+  return str.replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  const t = getTransporter();
-  if (!t) {
-    logger.warn({ to, subject }, "Email not sent (SMTP not configured)");
-    return false;
-  }
-
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER;
-
-  try {
-    await t.sendMail({ from, to, subject, html });
-    logger.info({ to, subject }, "Email sent");
-    return true;
-  } catch (err) {
-    logger.error({ err, to, subject }, "Failed to send email");
+  if (process.env.RESEND_API_KEY && process.env.RESEND_FROM) {
+    return await sendResendEmail(to, subject, html);
+  } else {
+    logger.error("Resend API Key o FROM no configurados");
     return false;
   }
 }
+
 
 export function buildPasswordResetEmail(name: string, resetUrl: string): string {
   return `
